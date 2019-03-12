@@ -1,8 +1,8 @@
 /*
-A KBase module: handle_service2
+A KBase module: handle_service
 */
 
-module handle_service2 {
+module handle_service {
     typedef structure {
         string report_name;
         string report_ref;
@@ -11,6 +11,6 @@ module handle_service2 {
     /*
         This example function accepts any number of parameters and returns results in a KBaseReport
     */
-    funcdef run_handle_service2(mapping<string,UnspecifiedObject> params) returns (ReportResults output) authentication required;
+    funcdef run_handle_service(mapping<string,UnspecifiedObject> params) returns (ReportResults output) authentication required;
 
 };

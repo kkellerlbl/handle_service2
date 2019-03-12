@@ -4,14 +4,14 @@ import time
 import unittest
 from configparser import ConfigParser
 
-from handle_service2.handle_service2Impl import handle_service2
-from handle_service2.handle_service2Server import MethodContext
-from handle_service2.authclient import KBaseAuth as _KBaseAuth
+from handle_service.handle_serviceImpl import handle_service
+from handle_service.handle_serviceServer import MethodContext
+from handle_service.authclient import KBaseAuth as _KBaseAuth
 
 from installed_clients.WorkspaceClient import Workspace
 
 
-class handle_service2Test(unittest.TestCase):
+class handle_serviceTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -20,7 +20,7 @@ class handle_service2Test(unittest.TestCase):
         cls.cfg = {}
         config = ConfigParser()
         config.read(config_file)
-        for nameval in config.items('handle_service2'):
+        for nameval in config.items('handle_service'):
             cls.cfg[nameval[0]] = nameval[1]
         # Getting username from Auth profile for token
         authServiceUrl = cls.cfg['auth-service-url']
@@ -32,14 +32,14 @@ class handle_service2Test(unittest.TestCase):
         cls.ctx.update({'token': token,
                         'user_id': user_id,
                         'provenance': [
-                            {'service': 'handle_service2',
+                            {'service': 'handle_service',
                              'method': 'please_never_use_it_in_production',
                              'method_params': []
                              }],
                         'authenticated': 1})
         cls.wsURL = cls.cfg['workspace-url']
         cls.wsClient = Workspace(cls.wsURL)
-        cls.serviceImpl = handle_service2(cls.cfg)
+        cls.serviceImpl = handle_service(cls.cfg)
         cls.scratch = cls.cfg['scratch']
         cls.callback_url = os.environ['SDK_CALLBACK_URL']
 
@@ -56,7 +56,7 @@ class handle_service2Test(unittest.TestCase):
         if hasattr(self.__class__, 'wsName'):
             return self.__class__.wsName
         suffix = int(time.time() * 1000)
-        wsName = "test_handle_service2_" + str(suffix)
+        wsName = "test_handle_service_" + str(suffix)
         ret = self.getWsClient().create_workspace({'workspace': wsName})  # noqa
         self.__class__.wsName = wsName
         return wsName

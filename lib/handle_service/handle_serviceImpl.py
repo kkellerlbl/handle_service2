@@ -3,13 +3,13 @@
 #END_HEADER
 
 
-class handle_service2:
+class handle_service:
     '''
     Module Name:
-    handle_service2
+    handle_service
 
     Module Description:
-    A KBase module: handle_service2
+    A KBase module: handle_service
     '''
 
     ######## WARNING FOR GEVENT USERS ####### noqa
@@ -19,8 +19,8 @@ class handle_service2:
     # the latter method is running.
     ######################################### noqa
     VERSION = "0.0.1"
-    GIT_URL = ""
-    GIT_COMMIT_HASH = ""
+    GIT_URL = "git@github.com:Tianhao-Gu/handle_service2.git"
+    GIT_COMMIT_HASH = "837b9933d4d443880b7d171609861ac810a4bd86"
 
     #BEGIN_CLASS_HEADER
     #END_CLASS_HEADER
@@ -33,7 +33,7 @@ class handle_service2:
         pass
 
 
-    def run_handle_service2(self, ctx, params):
+    def run_handle_service(self, ctx, params):
         """
         This example function accepts any number of parameters and returns results in a KBaseReport
         :param params: instance of mapping from String to unspecified object
@@ -42,12 +42,12 @@ class handle_service2:
         """
         # ctx is the context object
         # return variables are: output
-        #BEGIN run_handle_service2
-        #END run_handle_service2
+        #BEGIN run_handle_service
+        #END run_handle_service
 
         # At some point might do deeper type checking...
         if not isinstance(output, dict):
-            raise ValueError('Method run_handle_service2 return value ' +
+            raise ValueError('Method run_handle_service return value ' +
                              'output is not type dict as required.')
         # return the results
         return [output]

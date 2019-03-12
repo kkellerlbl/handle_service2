@@ -17,7 +17,7 @@ from jsonrpcbase import JSONRPCService, InvalidParamsError, KeywordError, \
 from jsonrpcbase import ServerError as JSONServerError
 
 from biokbase import log
-from handle_service2.authclient import KBaseAuth as _KBaseAuth
+from handle_service.authclient import KBaseAuth as _KBaseAuth
 
 try:
     from ConfigParser import ConfigParser
@@ -45,14 +45,14 @@ def get_config():
     retconfig = {}
     config = ConfigParser()
     config.read(get_config_file())
-    for nameval in config.items(get_service_name() or 'handle_service2'):
+    for nameval in config.items(get_service_name() or 'handle_service'):
         retconfig[nameval[0]] = nameval[1]
     return retconfig
 
 config = get_config()
 
-from handle_service2.handle_service2Impl import handle_service2  # noqa @IgnorePep8
-impl_handle_service2 = handle_service2(config)
+from handle_service.handle_serviceImpl import handle_service  # noqa @IgnorePep8
+impl_handle_service = handle_service(config)
 
 
 class JSONObjectEncoder(json.JSONEncoder):
@@ -327,7 +327,7 @@ class Application(object):
                                    context['method'], context['call_id'])
 
     def __init__(self):
-        submod = get_service_name() or 'handle_service2'
+        submod = get_service_name() or 'handle_service'
         self.userlog = log.log(
             submod, ip_address=True, authuser=True, module=True, method=True,
             call_id=True, changecallback=self.logcallback,
@@ -338,12 +338,12 @@ class Application(object):
         self.serverlog.set_log_level(6)
         self.rpc_service = JSONRPCServiceCustom()
         self.method_authentication = dict()
-        self.rpc_service.add(impl_handle_service2.run_handle_service2,
-                             name='handle_service2.run_handle_service2',
+        self.rpc_service.add(impl_handle_service.run_handle_service,
+                             name='handle_service.run_handle_service',
                              types=[dict])
-        self.method_authentication['handle_service2.run_handle_service2'] = 'required'  # noqa
-        self.rpc_service.add(impl_handle_service2.status,
-                             name='handle_service2.status',
+        self.method_authentication['handle_service.run_handle_service'] = 'required'  # noqa
+        self.rpc_service.add(impl_handle_service.status,
+                             name='handle_service.status',
                              types=[dict])
         authurl = config.get(AUTH) if config else None
         self.auth_client = _KBaseAuth(authurl)
@@ -398,7 +398,7 @@ class Application(object):
                             err = JSONServerError()
                             err.data = (
                                 'Authentication required for ' +
-                                'handle_service2 ' +
+                                'handle_service ' +
                                 'but no authentication header was passed')
                             raise err
                         elif token is None and auth_req == 'optional':
