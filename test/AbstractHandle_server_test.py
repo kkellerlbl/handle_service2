@@ -4,9 +4,9 @@ import time
 import unittest
 from configparser import ConfigParser
 
-from handle_service.handle_serviceImpl import handle_service
-from handle_service.handle_serviceServer import MethodContext
-from handle_service.authclient import KBaseAuth as _KBaseAuth
+from AbstractHandle.AbstractHandleImpl import AbstractHandle
+from AbstractHandle.AbstractHandleServer import MethodContext
+from AbstractHandle.authclient import KBaseAuth as _KBaseAuth
 
 from installed_clients.WorkspaceClient import Workspace
 
@@ -39,7 +39,7 @@ class handle_serviceTest(unittest.TestCase):
                         'authenticated': 1})
         cls.wsURL = cls.cfg['workspace-url']
         cls.wsClient = Workspace(cls.wsURL)
-        cls.serviceImpl = handle_service(cls.cfg)
+        cls.serviceImpl = AbstractHandle(cls.cfg)
         cls.scratch = cls.cfg['scratch']
         cls.callback_url = os.environ['SDK_CALLBACK_URL']
 

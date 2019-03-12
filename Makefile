@@ -1,5 +1,5 @@
-SERVICE = handle_service
-SERVICE_CAPS = handle_service
+SERVICE = AbstractHandle
+SERVICE_CAPS = AbstractHandle
 SPEC_FILE = handle_service.spec
 URL = https://kbase.us/services/handle_service
 DIR = $(shell pwd)
