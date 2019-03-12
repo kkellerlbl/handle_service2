@@ -3,12 +3,16 @@ import os
 import time
 import unittest
 from configparser import ConfigParser
+import inspect
 
 from AbstractHandle.AbstractHandleImpl import AbstractHandle
 from AbstractHandle.AbstractHandleServer import MethodContext
 from AbstractHandle.authclient import KBaseAuth as _KBaseAuth
 
 from installed_clients.WorkspaceClient import Workspace
+
+from sql_util import SQLHelper
+from mongo_util import MongoHelper
 
 
 class handle_serviceTest(unittest.TestCase):
@@ -20,7 +24,7 @@ class handle_serviceTest(unittest.TestCase):
         cls.cfg = {}
         config = ConfigParser()
         config.read(config_file)
-        for nameval in config.items('handle_service'):
+        for nameval in config.items('AbstractHandle'):
             cls.cfg[nameval[0]] = nameval[1]
         # Getting username from Auth profile for token
         authServiceUrl = cls.cfg['auth-service-url']
@@ -32,7 +36,7 @@ class handle_serviceTest(unittest.TestCase):
         cls.ctx.update({'token': token,
                         'user_id': user_id,
                         'provenance': [
-                            {'service': 'handle_service',
+                            {'service': 'AbstractHandle',
                              'method': 'please_never_use_it_in_production',
                              'method_params': []
                              }],
@@ -42,6 +46,8 @@ class handle_serviceTest(unittest.TestCase):
         cls.serviceImpl = AbstractHandle(cls.cfg)
         cls.scratch = cls.cfg['scratch']
         cls.callback_url = os.environ['SDK_CALLBACK_URL']
+        cls.sql_helper = SQLHelper()
+        cls.mongo_helper = MongoHelper()
 
     @classmethod
     def tearDownClass(cls):
@@ -56,7 +62,7 @@ class handle_serviceTest(unittest.TestCase):
         if hasattr(self.__class__, 'wsName'):
             return self.__class__.wsName
         suffix = int(time.time() * 1000)
-        wsName = "test_handle_service_" + str(suffix)
+        wsName = "test_AbstractHandle_" + str(suffix)
         ret = self.getWsClient().create_workspace({'workspace': wsName})  # noqa
         self.__class__.wsName = wsName
         return wsName
@@ -67,15 +73,21 @@ class handle_serviceTest(unittest.TestCase):
     def getContext(self):
         return self.__class__.ctx
 
+    def createMongoDB(self):
+        if hasattr(self.__class__, 'my_client'):
+            return self.__class__.my_client
+
+        my_client = self.mongo_helper.create_test_db()
+
+        self.__class__.my_client = my_client
+        return my_client
+
+    def start_test(self):
+        testname = inspect.stack()[1][3]
+        print('\n*** starting test: ' + testname + ' **')
+
     # NOTE: According to Python unittest naming rules test method names should start from 'test'. # noqa
     def test_your_method(self):
-        # Prepare test objects in workspace if needed using
-        # self.getWsClient().save_objects({'workspace': self.getWsName(),
-        #                                  'objects': []})
-        #
-        # Run your method by
-        # ret = self.getImpl().your_method(self.getContext(), parameters...)
-        #
-        # Check returned data with
-        # self.assertEqual(ret[...], ...) or other unittest methods
-        pass
+        my_client = self.createMongoDB()
+        print('created mongo DB')
+        print(my_client)

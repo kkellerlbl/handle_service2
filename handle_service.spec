@@ -33,7 +33,7 @@ module AbstractHandle {
     /*
       The persist_handle writes the handle to a persistent store that can be later retrieved using the list_handles function.
     */
-    funcdef persist_handle(Handle h) returns (string hid) authentication required;
+    funcdef persist_handle(Handle handle) returns (string hid) authentication required;
 
     /*
       Given a list of handle ids, this function returns a list of handles.

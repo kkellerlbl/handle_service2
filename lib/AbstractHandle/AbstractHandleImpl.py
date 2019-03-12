@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #BEGIN_HEADER
+import logging
+import os
 #END_HEADER
 
 
@@ -21,7 +23,7 @@ provides a programmatic access to a remote file store
     ######################################### noqa
     VERSION = "0.0.1"
     GIT_URL = "git@github.com:Tianhao-Gu/handle_service2.git"
-    GIT_COMMIT_HASH = "26be3641ef276ae1983aedd19544e19ffcc0e827"
+    GIT_COMMIT_HASH = "d108e4e05ae5d8fa1061801fcfbb05a97a27868e"
 
     #BEGIN_CLASS_HEADER
     #END_CLASS_HEADER
@@ -30,31 +32,41 @@ provides a programmatic access to a remote file store
     # be found
     def __init__(self, config):
         #BEGIN_CONSTRUCTOR
+        self.config = config
+        self.config['KB_AUTH_TOKEN'] = os.environ['KB_AUTH_TOKEN']
+
+        logging.basicConfig(format='%(created)s %(levelname)s: %(message)s',
+                            level=logging.INFO)
+
         #END_CONSTRUCTOR
         pass
 
 
-    def persist_handle(self, ctx, h):
+    def persist_handle(self, ctx, handle):
         """
         The persist_handle writes the handle to a persistent store that can be later retrieved using the list_handles function.
-        :param h: instance of type "Handle" -> structure: parameter "hid" of
-           type "HandleId" (Handle provides a unique reference that enables
-           access to the data files through functions provided as part of the
-           HandleService. In the case of using shock, the id is the node id.
-           In the case of using shock the value of type is shock. In the
-           future these values should enumerated. The value of url is the
-           http address of the shock server, including the protocol (http or
-           https) and if necessary the port. The values of remote_md5 and
-           remote_sha1 are those computed on the file in the remote data
-           store. These can be used to verify uploads and downloads.),
-           parameter "file_name" of String, parameter "id" of type "NodeId",
-           parameter "type" of String, parameter "url" of String, parameter
-           "remote_md5" of String, parameter "remote_sha1" of String
+        :param handle: instance of type "Handle" -> structure: parameter
+           "hid" of type "HandleId" (Handle provides a unique reference that
+           enables access to the data files through functions provided as
+           part of the HandleService. In the case of using shock, the id is
+           the node id. In the case of using shock the value of type is
+           shock. In the future these values should enumerated. The value of
+           url is the http address of the shock server, including the
+           protocol (http or https) and if necessary the port. The values of
+           remote_md5 and remote_sha1 are those computed on the file in the
+           remote data store. These can be used to verify uploads and
+           downloads.), parameter "file_name" of String, parameter "id" of
+           type "NodeId", parameter "type" of String, parameter "url" of
+           String, parameter "remote_md5" of String, parameter "remote_sha1"
+           of String
         :returns: instance of String
         """
         # ctx is the context object
         # return variables are: hid
         #BEGIN persist_handle
+        logging.info("Start persist handle")
+
+        hid = handle.get('hid')
         #END persist_handle
 
         # At some point might do deeper type checking...
@@ -289,6 +301,7 @@ provides a programmatic access to a remote file store
         # ctx is the context object
         # return variables are: returnVal
         #BEGIN is_readable
+        returnVal = self.are_readable([hid])[0]
         #END is_readable
 
         # At some point might do deeper type checking...
