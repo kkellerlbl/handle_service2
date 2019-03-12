@@ -1,5 +1,5 @@
 module-name:
-    handle_service2
+    handle_service
 
 module-description:
     A KBase module
