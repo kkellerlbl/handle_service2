@@ -57,7 +57,7 @@ class MongoHelper:
     def __init__(self):
         self._start_service()
 
-    def create_test_db(self, db='test_database', col='test_collection'):
+    def create_test_db(self, db='handle_db', col='handle'):
 
         logging.info('creating collection and dbs')
 
@@ -67,7 +67,12 @@ class MongoHelper:
 
         handles = self._get_default_handles()
 
-        my_collection.insert_many(handles)
+        for handle in handles:
+            query = {'hid': handle.get('hid')}
+            mydoc = my_collection.find(query)
+
+            if not mydoc.count():
+                my_collection.insert_one(handle)
 
         logging.info('created db: {}'.format(my_client.list_database_names()))
 

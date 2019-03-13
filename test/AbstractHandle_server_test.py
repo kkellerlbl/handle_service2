@@ -48,6 +48,8 @@ class handle_serviceTest(unittest.TestCase):
         cls.callback_url = os.environ['SDK_CALLBACK_URL']
         cls.sql_helper = SQLHelper()
         cls.mongo_helper = MongoHelper()
+        cls.my_client = cls.mongo_helper.create_test_db(db=cls.cfg['mongo-database'],
+                                                        col=cls.cfg['mongo-collection'])
 
     @classmethod
     def tearDownClass(cls):
