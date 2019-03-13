@@ -63,3 +63,34 @@ class MongoUtilTest(unittest.TestCase):
         handle_collection = mongo_util.handle_collection
         self.assertEqual(handle_collection.name, 'handle')
         self.assertEqual(handle_collection.count_documents({}), 10)
+
+    def test_find_in_ok(self):
+        self.start_test()
+
+        mongo_util = self.getMongoUtil()
+
+        # test query 'hid' field
+        elements = [68021, 68022]
+        docs = mongo_util.find_in(elements, 'hid')
+        self.assertEqual(docs.count(), 2)
+
+        # test query 'hid' field with empty data
+        elements = [0]
+        docs = mongo_util.find_in(elements, 'hid')
+        self.assertEqual(docs.count(), 0)
+
+        # test query 'id' field
+        elements = ['b753774f-0bbd-4b96-9202-89b0c70bf31c']
+        docs = mongo_util.find_in(elements, 'id')
+        self.assertEqual(docs.count(), 1)
+        doc = docs.next()
+        self.assertFalse('_id' in doc.keys())
+        self.assertEqual(doc.get('hid'), 67712)
+
+        # test null projection
+        elements = ['b753774f-0bbd-4b96-9202-89b0c70bf31c']
+        docs = mongo_util.find_in(elements, 'id', projection=None)
+        self.assertEqual(docs.count(), 1)
+        doc = docs.next()
+        self.assertEqual(doc.get('_id'), 67712)
+        self.assertEqual(doc.get('hid'), 67712)

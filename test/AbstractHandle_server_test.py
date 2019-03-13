@@ -88,8 +88,48 @@ class handle_serviceTest(unittest.TestCase):
         testname = inspect.stack()[1][3]
         print('\n*** starting test: ' + testname + ' **')
 
-    # NOTE: According to Python unittest naming rules test method names should start from 'test'. # noqa
-    def test_your_method(self):
-        my_client = self.createMongoDB()
-        print('created mongo DB')
-        print(my_client)
+    def test_fetch_handles_by_okay(self):
+        self.start_test()
+        handler = self.getImpl()
+
+        # test query 'hid' field
+        elements = [68021, 68022]
+        field_name = 'hid'
+        handles = handler.fetch_handles_by(self.ctx, {'elements': elements, 'field_name': field_name})[0]
+        self.assertEqual(len(handles), 2)
+        self.assertCountEqual(elements, [h.get('hid') for h in handles])
+
+        # test query 'hid' field with empty data
+        elements = [0]
+        field_name = 'hid'
+        handles = handler.fetch_handles_by(self.ctx, {'elements': elements, 'field_name': field_name})[0]
+        self.assertEqual(len(handles), 0)
+
+        # test query 'id' field
+        elements = ['b753774f-0bbd-4b96-9202-89b0c70bf31c']
+        field_name = 'id'
+        handles = handler.fetch_handles_by(self.ctx, {'elements': elements, 'field_name': field_name})[0]
+        self.assertEqual(len(handles), 1)
+        handle = handles[0]
+        self.assertFalse('_id' in handle)
+        self.assertEqual(handle.get('hid'), 67712)
+
+    def test_ids_to_handles_okay(self):
+        self.start_test()
+        handler = self.getImpl()
+
+        ids = ['b753774f-0bbd-4b96-9202-89b0c70bf31c']
+        handles = handler.ids_to_handles(self.ctx, ids)[0]
+        self.assertEqual(len(handles), 1)
+        handle = handles[0]
+        self.assertFalse('_id' in handle)
+        self.assertEqual(handle.get('hid'), 67712)
+
+    def test_hids_to_handles_okay(self):
+        self.start_test()
+        handler = self.getImpl()
+
+        hids = [68021, 68022]
+        handles = handler.hids_to_handles(self.ctx, hids)[0]
+        self.assertEqual(len(handles), 2)
+        self.assertCountEqual(hids, [h.get('hid') for h in handles])

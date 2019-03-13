@@ -2,6 +2,8 @@
 #BEGIN_HEADER
 import logging
 import os
+
+from AbstractHandle.Utils.Handler import Handler
 #END_HEADER
 
 
@@ -23,7 +25,7 @@ provides a programmatic access to a remote file store
     ######################################### noqa
     VERSION = "0.0.1"
     GIT_URL = "git@github.com:Tianhao-Gu/handle_service2.git"
-    GIT_COMMIT_HASH = "d108e4e05ae5d8fa1061801fcfbb05a97a27868e"
+    GIT_COMMIT_HASH = "fe8686f5ba6f253cc5aa18fbbd32a57d2478049e"
 
     #BEGIN_CLASS_HEADER
     #END_CLASS_HEADER
@@ -37,6 +39,8 @@ provides a programmatic access to a remote file store
 
         logging.basicConfig(format='%(created)s %(levelname)s: %(message)s',
                             level=logging.INFO)
+
+        self.handler = Handler(self.config)
 
         #END_CONSTRUCTOR
         pass
@@ -108,7 +112,7 @@ provides a programmatic access to a remote file store
         # ctx is the context object
         # return variables are: handles
         #BEGIN hids_to_handles
-        handles = self.fetch_handles_by({'elements': hids, 'key': 'hid'})[0]
+        handles = self.fetch_handles_by(ctx, {'elements': hids, 'field_name': 'hid'})[0]
         #END hids_to_handles
 
         # At some point might do deeper type checking...
@@ -142,7 +146,7 @@ provides a programmatic access to a remote file store
         # ctx is the context object
         # return variables are: handles
         #BEGIN ids_to_handles
-        handles = self.fetch_handles_by({'elements': ids, 'key': 'id'})[0]
+        handles = self.fetch_handles_by(ctx, {'elements': ids, 'field_name': 'id'})[0]
         #END ids_to_handles
 
         # At some point might do deeper type checking...
@@ -154,9 +158,10 @@ provides a programmatic access to a remote file store
 
     def fetch_handles_by(self, ctx, params):
         """
-        This function select records if key column entry is in elements and returns a list of handles.
+        This function select records if field column entry is in elements and returns a list of handles.
         :param params: instance of type "FetchHandlesParams" -> structure:
-           parameter "elements" of list of String, parameter "key" of String
+           parameter "elements" of list of String, parameter "field_name" of
+           String
         :returns: instance of list of type "Handle" -> structure: parameter
            "hid" of type "HandleId" (Handle provides a unique reference that
            enables access to the data files through functions provided as
@@ -175,6 +180,7 @@ provides a programmatic access to a remote file store
         # ctx is the context object
         # return variables are: handles
         #BEGIN fetch_handles_by
+        handles = self.handler.fetch_handles_by(params)
         #END fetch_handles_by
 
         # At some point might do deeper type checking...

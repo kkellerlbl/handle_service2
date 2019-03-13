@@ -50,11 +50,11 @@ module AbstractHandle {
 
     typedef structure {
       list<string> elements;
-      string key;
+      string field_name;
     } FetchHandlesParams;
 
     /*
-      This function select records if key column entry is in elements and returns a list of handles.
+      This function select records if field column entry is in elements and returns a list of handles.
     */
     funcdef fetch_handles_by(FetchHandlesParams params) returns (list<Handle> handles) authentication required;
 

@@ -28,20 +28,6 @@ class MongoUtil:
 
         logging.info(stdout)
 
-    def _insert_one(self, doc):
-        """
-        insert a doc into collection
-        """
-
-        try:
-            self.handle_collection.insert_one(doc)
-        except Exception as e:
-            error_msg = 'Connot insert doc\n'
-            error_msg += 'ERROR -- {}:\n{}'.format(
-                            e,
-                            ''.join(traceback.format_exception(None, e, e.__traceback__)))
-            raise ValueError(error_msg)
-
     def _get_collection(self, mongo_host, mongo_port, mongo_database, mongo_collection):
         """
         connect Mongo server and return a collection
@@ -74,3 +60,36 @@ class MongoUtil:
         self._start_service()
         self.handle_collection = self._get_collection(self.mongo_host, self.mongo_port,
                                                       self.mongo_database, self.mongo_collection)
+
+    def find_in(self, elements, field_name, projection={'_id': False}, batch_size=1000):
+        """
+        return cursor that contains docs which field column is in elements
+        """
+
+        try:
+            result = self.handle_collection.find({field_name: {'$in': elements}},
+                                                 projection=projection, batch_size=batch_size)
+        except Exception as e:
+            error_msg = 'Connot insert doc\n'
+            error_msg += 'ERROR -- {}:\n{}'.format(
+                            e,
+                            ''.join(traceback.format_exception(None, e, e.__traceback__)))
+            raise ValueError(error_msg)
+
+        return result
+
+    def insert_one(self, doc):
+        """
+        insert a doc into collection
+        """
+
+        try:
+            self.handle_collection.insert_one(doc)
+        except Exception as e:
+            error_msg = 'Connot insert doc\n'
+            error_msg += 'ERROR -- {}:\n{}'.format(
+                            e,
+                            ''.join(traceback.format_exception(None, e, e.__traceback__)))
+            raise ValueError(error_msg)
+
+        return True
