@@ -1,6 +1,5 @@
 
 import logging
-import os
 from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError
 import subprocess
@@ -61,10 +60,14 @@ class MongoUtil:
         self.handle_collection = self._get_collection(self.mongo_host, self.mongo_port,
                                                       self.mongo_database, self.mongo_collection)
 
+        logging.basicConfig(format='%(created)s %(levelname)s: %(message)s',
+                            level=logging.INFO)
+
     def find_in(self, elements, field_name, projection={'_id': False}, batch_size=1000):
         """
         return cursor that contains docs which field column is in elements
         """
+        logging.info('start querying MongoDB')
 
         try:
             result = self.handle_collection.find({field_name: {'$in': elements}},
@@ -82,11 +85,49 @@ class MongoUtil:
         """
         insert a doc into collection
         """
+        logging.info('start inserting document')
 
         try:
             self.handle_collection.insert_one(doc)
         except Exception as e:
             error_msg = 'Connot insert doc\n'
+            error_msg += 'ERROR -- {}:\n{}'.format(
+                            e,
+                            ''.join(traceback.format_exception(None, e, e.__traceback__)))
+            raise ValueError(error_msg)
+
+        return True
+
+    def update_one(self, doc):
+        """
+        update a doc
+        """
+        logging.info('start updating document')
+
+        try:
+            update_filter = {'hid': doc.get('hid')}
+            update = {'$set': doc}
+            self.handle_collection.update_one(update_filter, update)
+        except Exception as e:
+            error_msg = 'Connot update doc\n'
+            error_msg += 'ERROR -- {}:\n{}'.format(
+                            e,
+                            ''.join(traceback.format_exception(None, e, e.__traceback__)))
+            raise ValueError(error_msg)
+
+        return True
+
+    def delete_one(self, doc):
+        """
+        delete a doc
+        """
+        logging.info('start deleting document')
+
+        try:
+            delete_filter = {'hid': doc.get('hid')}
+            self.handle_collection.delete_one(delete_filter)
+        except Exception as e:
+            error_msg = 'Connot delete doc\n'
             error_msg += 'ERROR -- {}:\n{}'.format(
                             e,
                             ''.join(traceback.format_exception(None, e, e.__traceback__)))

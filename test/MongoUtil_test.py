@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
-import time
 import unittest
 from configparser import ConfigParser
 import inspect
+import copy
 
 from AbstractHandle.authclient import KBaseAuth as _KBaseAuth
 
@@ -66,7 +66,6 @@ class MongoUtilTest(unittest.TestCase):
 
     def test_find_in_ok(self):
         self.start_test()
-
         mongo_util = self.getMongoUtil()
 
         # test query 'hid' field
@@ -94,3 +93,63 @@ class MongoUtilTest(unittest.TestCase):
         doc = docs.next()
         self.assertEqual(doc.get('_id'), 67712)
         self.assertEqual(doc.get('hid'), 67712)
+
+    def test_update_one_ok(self):
+        self.start_test()
+        mongo_util = self.getMongoUtil()
+
+        elements = ['b753774f-0bbd-4b96-9202-89b0c70bf31c']
+        docs = mongo_util.find_in(elements, 'id', projection=None)
+        self.assertEqual(docs.count(), 1)
+        doc = docs.next()
+        self.assertEqual(doc.get('created_by'), 'tgu2')
+
+        update_doc = copy.deepcopy(doc)
+        new_user = 'test_user'
+        update_doc['created_by'] = new_user
+
+        mongo_util.update_one(update_doc)
+
+        docs = mongo_util.find_in(elements, 'id', projection=None)
+        new_doc = docs.next()
+        self.assertEqual(new_doc.get('created_by'), new_user)
+
+        mongo_util.update_one(doc)
+
+    def test_insert_one_ok(self):
+        self.start_test()
+        mongo_util = self.getMongoUtil()
+        self.assertEqual(mongo_util.handle_collection.find().count(), 10)
+
+        doc = {'_id': 9999, 'hid': 9999, 'file_name': 'fake_file'}
+        mongo_util.insert_one(doc)
+
+        self.assertEqual(mongo_util.handle_collection.find().count(), 11)
+        elements = [9999]
+        docs = mongo_util.find_in(elements, 'hid', projection=None)
+        self.assertEqual(docs.count(), 1)
+        doc = docs.next()
+        self.assertEqual(doc.get('hid'), 9999)
+        self.assertEqual(doc.get('file_name'), 'fake_file')
+
+        mongo_util.delete_one(doc)
+        self.assertEqual(mongo_util.handle_collection.find().count(), 10)
+
+    def test_delete_one_ok(self):
+        self.start_test()
+        mongo_util = self.getMongoUtil()
+        docs = mongo_util.handle_collection.find()
+        self.assertEqual(docs.count(), 10)
+
+        doc = docs.next()
+        hid = doc.get('hid')
+        mongo_util.delete_one(doc)
+        self.assertEqual(mongo_util.handle_collection.find().count(), 9)
+
+        docs = mongo_util.find_in([hid], 'hid', projection=None)
+        self.assertEqual(docs.count(), 0)
+
+        mongo_util.insert_one(doc)
+        self.assertEqual(mongo_util.handle_collection.find().count(), 10)
+        docs = mongo_util.find_in([hid], 'hid', projection=None)
+        self.assertEqual(docs.count(), 1)

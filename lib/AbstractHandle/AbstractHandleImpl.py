@@ -70,7 +70,8 @@ provides a programmatic access to a remote file store
         #BEGIN persist_handle
         logging.info("Start persist handle")
 
-        hid = handle.get('hid')
+        hid = self.handler.persist_handle(handle, ctx['user_id'])
+
         #END persist_handle
 
         # At some point might do deeper type checking...
@@ -307,7 +308,7 @@ provides a programmatic access to a remote file store
         # ctx is the context object
         # return variables are: returnVal
         #BEGIN is_readable
-        returnVal = self.are_readable([hid])[0]
+        returnVal = self.are_readable(ctx, [hid])[0]
         #END is_readable
 
         # At some point might do deeper type checking...

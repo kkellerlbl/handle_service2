@@ -133,3 +133,20 @@ class handle_serviceTest(unittest.TestCase):
         handles = handler.hids_to_handles(self.ctx, hids)[0]
         self.assertEqual(len(handles), 2)
         self.assertCountEqual(hids, [h.get('hid') for h in handles])
+
+    def test_persist_handle_okay(self):
+        self.start_test()
+        handler = self.getImpl()
+
+        new_hid = 68021
+        handle = {'hid': new_hid,
+                  'id': '7a2ff7c8-d87d-4c25-ad25-5f85ea794afa',
+                  'file_name': 'tmp_fastq.fq.gz',
+                  'type': 'shock',
+                  'url': 'https://ci.kbase.us/services/shock-api',
+                  'remote_md5': '05361e0506af15be6701b175adbb23e4',
+                  'remote_sha1': None,
+                  'created_by': 'tgu2',
+                  'creation_date': '2016-12-21 21:45:39'}
+        hid = handler.persist_handle(self.ctx, handle)[0]
+        self.assertEqual(hid, str(new_hid))
