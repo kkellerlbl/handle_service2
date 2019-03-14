@@ -4,6 +4,7 @@ from time import gmtime, strftime
 import uuid
 
 from AbstractHandle.Utils.MongoUtil import MongoUtil
+from AbstractHandle.Utils.ShockUtil import ShockUtil
 
 
 class Handler:
@@ -60,6 +61,8 @@ class Handler:
 
     def __init__(self, config):
         self.mongo_util = MongoUtil(config)
+        self.shock_util = ShockUtil(config)
+
         logging.basicConfig(format='%(created)s %(levelname)s: %(message)s',
                             level=logging.INFO)
 
@@ -128,3 +131,38 @@ class Handler:
         deleted_count = self.mongo_util.delete_many(handles)
 
         return deleted_count
+
+    def is_owner(self, hids, user_id):
+
+        handles = self.fetch_handles_by({'elements': hids, 'field_name': 'hid'})
+
+        for handle in handles:
+            node_type = handle.get('type')
+            if node_type != 'shock':
+                raise ValueError('Do not support node type other than Shock')
+
+            node_id = handle.get('id')
+            owner = self.shock_util.get_owner(node_id)
+
+            if owner != user_id:
+                return False
+
+        return True
+
+    def are_readable(self, hids):
+
+        handles = self.fetch_handles_by({'elements': hids, 'field_name': 'hid'})
+
+        for handle in handles:
+            node_type = handle.get('type')
+            if node_type != 'shock':
+                raise ValueError('Do not support node type other than Shock')
+
+            node_id = handle.get('id')
+
+            is_readable = self.shock_util.is_readable(node_id)
+
+            if not is_readable:
+                return False
+
+        return True
