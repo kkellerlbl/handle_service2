@@ -11,6 +11,8 @@ from mongo_util import MongoHelper
 from AbstractHandle.Utils.Handler import Handler
 from AbstractHandle.Utils.MongoUtil import MongoUtil
 
+from unittest import mock
+
 
 class HandlerTest(unittest.TestCase):
 
@@ -235,3 +237,23 @@ class HandlerTest(unittest.TestCase):
         handles_to_delete = handler.fetch_handles_by({'elements': hids, 'field_name': 'hid'})
         delete_count = handler.delete_handles(handles_to_delete, self.user_id)
         self.assertEqual(delete_count, len(hids))
+
+    # def test_add_read_acl_ok(self):
+    #     self.start_test()
+    #     handler = self.getHandler()
+
+    #     hids = list()
+
+    #     handle = {'id': '4cb26117-9793-4354-98a6-926c02a7bd0e',  # use one of `tgu2` node
+    #               'file_name': 'file_name',
+    #               'type': 'shock',
+    #               'url': 'https://ci.kbase.us/services/shock-api'}
+    #     hid = handler.persist_handle(handle, self.user_id)
+    #     hids.append(hid)
+
+    #     handler.add_read_acl(hids, self.user_id, 'test_user')
+    #     handler.add_read_acl(hids, self.user_id)
+
+    #     handles_to_delete = handler.fetch_handles_by({'elements': hids, 'field_name': 'hid'})
+    #     delete_count = handler.delete_handles(handles_to_delete, self.user_id)
+    #     self.assertEqual(delete_count, len(hids))

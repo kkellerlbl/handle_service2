@@ -23,6 +23,7 @@ RUN echo "mongodb-org hold" | sudo dpkg --set-selections \
 
 RUN pip install mysql-connector
 RUN pip install pymongo
+RUN pip install mock
 
 
 # -----------------------------------------

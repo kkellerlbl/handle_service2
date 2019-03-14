@@ -80,4 +80,17 @@ module AbstractHandle {
     */
     funcdef is_readable(HandleId hid) returns(int) authentication required;
 
+    /*
+      The add_read_acl function will update the acl of the shock node that the handle references.
+      The function is only accessible to a specific list of users specified at startup time.
+      The underlying shock node will be made readable to the user requested.
+    */
+    funcdef add_read_acl(list<HandleId> hids, string username) returns (int) authentication required;
+
+    /*
+      The set_public_read function will update the acl of the shock node that the handle references to make the node globally readable.
+      The function is only accessible to a specific list of users specified at startup time.
+    */
+    funcdef set_public_read(list<HandleId> hids) returns (int) authentication required;
+
 };
