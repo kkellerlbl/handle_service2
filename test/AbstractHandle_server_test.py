@@ -27,6 +27,7 @@ class handle_serviceTest(unittest.TestCase):
         config.read(config_file)
         for nameval in config.items('AbstractHandle'):
             cls.cfg[nameval[0]] = nameval[1]
+
         # Getting username from Auth profile for token
         authServiceUrl = cls.cfg['auth-service-url']
         auth_client = _KBaseAuth(authServiceUrl)
@@ -186,30 +187,56 @@ class handle_serviceTest(unittest.TestCase):
         self.start_test()
         handler = self.getImpl()
 
-        handles = [{'id': 'id',
-                    'file_name': 'file_name',
-                    'type': 'shock',
-                    'url': 'http://ci.kbase.us:7044/'}] * 2
         hids = list()
-        for handle in handles:
-            # create handles created by current token user
-            hid = handler.persist_handle(self.ctx, handle)[0]
-            hids.append(hid)
+
+        handle = {'id': '4cb26117-9793-4354-98a6-926c02a7bd0e',  # use one of `tgu2` node
+                  'file_name': 'file_name',
+                  'type': 'shock',
+                  'url': 'https://ci.kbase.us/services/shock-api'}
+        hid = handler.persist_handle(self.ctx, handle)[0]
+        hids.append(hid)
+
+        handle = {'id': 'cadf4bd8-7d95-4edd-994c-b50e29c25e50',  # use one of `tgu2` node
+                  'file_name': 'file_name',
+                  'type': 'shock',
+                  'url': 'https://ci.kbase.us/services/shock-api'}
+        hid = handler.persist_handle(self.ctx, handle)[0]
+        hids.append(hid)
 
         is_owner = handler.is_owner(self.ctx, hids)[0]
-        self.assertTrue(is_owner)
+        self.assertTrue(is_owner)  # TODO it will fail if test user is not tgu2
 
-        new_handle = {'id': 'id',
-                      'file_name': 'file_name',
-                      'type': 'shock',
-                      'url': 'http://ci.kbase.us:7044/',
-                      'created_by': 'fake_user'}
-        # create a handle created by current token user
-        new_hid = handler.persist_handle(self.ctx, new_handle)[0]
-        hids.append(new_hid)
+        new_handles = handler.fetch_handles_by(self.ctx, {'elements': hids, 'field_name': 'hid'})[0]
 
-        is_owner = handler.is_owner(self.ctx, hids)[0]
-        self.assertFalse(is_owner)
+        for handle in new_handles:
+            self.mongo_util.delete_one(handle)
+
+    def test_are_is_readable_ok(self):
+
+        self.start_test()
+        handler = self.getImpl()
+
+        hids = list()
+
+        handle = {'id': '4cb26117-9793-4354-98a6-926c02a7bd0e',  # use one of `tgu2` node
+                  'file_name': 'file_name',
+                  'type': 'shock',
+                  'url': 'https://ci.kbase.us/services/shock-api'}
+        hid = handler.persist_handle(self.ctx, handle)[0]
+        hids.append(hid)
+
+        handle = {'id': 'cadf4bd8-7d95-4edd-994c-b50e29c25e50',  # use one of `tgu2` node
+                  'file_name': 'file_name',
+                  'type': 'shock',
+                  'url': 'https://ci.kbase.us/services/shock-api'}
+        hid = handler.persist_handle(self.ctx, handle)[0]
+        hids.append(hid)
+
+        are_readable = handler.are_readable(self.ctx, hids)[0]
+        self.assertTrue(are_readable)  # TODO it will fail if test user is not tgu2
+
+        is_readable = handler.is_readable(self.ctx, hids[0])[0]
+        self.assertTrue(is_readable)  # TODO it will fail if test user is not tgu2
 
         new_handles = handler.fetch_handles_by(self.ctx, {'elements': hids, 'field_name': 'hid'})[0]
 

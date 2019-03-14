@@ -25,7 +25,7 @@ provides a programmatic access to a remote file store
     ######################################### noqa
     VERSION = "0.0.1"
     GIT_URL = "git@github.com:Tianhao-Gu/handle_service2.git"
-    GIT_COMMIT_HASH = "941d8649337b659c7cfa1b5a812a69d9d81585fd"
+    GIT_COMMIT_HASH = "e720dd429516449c685c2d38c0bd2c72fc653b24"
 
     #BEGIN_CLASS_HEADER
     #END_CLASS_HEADER
@@ -41,7 +41,6 @@ provides a programmatic access to a remote file store
                             level=logging.INFO)
 
         self.handler = Handler(self.config)
-
         #END_CONSTRUCTOR
         pass
 
@@ -71,7 +70,6 @@ provides a programmatic access to a remote file store
         logging.info("Start persist handle")
 
         hid = self.handler.persist_handle(handle, ctx['user_id'])
-
         #END persist_handle
 
         # At some point might do deeper type checking...
@@ -210,10 +208,7 @@ provides a programmatic access to a remote file store
         # ctx is the context object
         # return variables are: returnVal
         #BEGIN is_owner
-        handles = self.fetch_handles_by(ctx, {'elements': hids, 'field_name': 'hid'})[0]
-        handle_user = set([h.get('created_by') for h in handles])
-
-        returnVal = (handle_user == set([ctx['user_id']]))
+        returnVal = self.handler.is_owner(hids, ctx['user_id'])
         #END is_owner
 
         # At some point might do deeper type checking...
@@ -245,9 +240,7 @@ provides a programmatic access to a remote file store
         # ctx is the context object
         # return variables are: deleted_count
         #BEGIN delete_handles
-
         deleted_count = self.handler.delete_handles(handles, ctx['user_id'])
-
         #END delete_handles
 
         # At some point might do deeper type checking...
@@ -276,9 +269,7 @@ provides a programmatic access to a remote file store
         # ctx is the context object
         # return variables are: returnVal
         #BEGIN are_readable
-        is_owner = self.is_owner(ctx, hids)[0]
-
-        returnVal = is_owner
+        returnVal = self.handler.are_readable(hids)
         #END are_readable
 
         # At some point might do deeper type checking...
@@ -312,6 +303,66 @@ provides a programmatic access to a remote file store
         # At some point might do deeper type checking...
         if not isinstance(returnVal, int):
             raise ValueError('Method is_readable return value ' +
+                             'returnVal is not type int as required.')
+        # return the results
+        return [returnVal]
+
+    def add_read_acl(self, ctx, hids, username):
+        """
+        The add_read_acl function will update the acl of the shock node that the handle references.
+        The function is only accessible to a specific list of users specified at startup time.
+        The underlying shock node will be made readable to the user requested.
+        :param hids: instance of list of type "HandleId" (Handle provides a
+           unique reference that enables access to the data files through
+           functions provided as part of the HandleService. In the case of
+           using shock, the id is the node id. In the case of using shock the
+           value of type is shock. In the future these values should
+           enumerated. The value of url is the http address of the shock
+           server, including the protocol (http or https) and if necessary
+           the port. The values of remote_md5 and remote_sha1 are those
+           computed on the file in the remote data store. These can be used
+           to verify uploads and downloads.)
+        :param username: instance of String
+        :returns: instance of Long
+        """
+        # ctx is the context object
+        # return variables are: returnVal
+        #BEGIN add_read_acl
+        returnVal = self.handler.add_read_acl(hids, ctx['user_id'], username=username)
+        #END add_read_acl
+
+        # At some point might do deeper type checking...
+        if not isinstance(returnVal, int):
+            raise ValueError('Method add_read_acl return value ' +
+                             'returnVal is not type int as required.')
+        # return the results
+        return [returnVal]
+
+    def set_public_read(self, ctx, hids):
+        """
+        The set_public_read function will update the acl of the shock node that the handle references to make the node globally readable.
+        The function is only accessible to a specific list of users specified at startup time.
+        :param hids: instance of list of type "HandleId" (Handle provides a
+           unique reference that enables access to the data files through
+           functions provided as part of the HandleService. In the case of
+           using shock, the id is the node id. In the case of using shock the
+           value of type is shock. In the future these values should
+           enumerated. The value of url is the http address of the shock
+           server, including the protocol (http or https) and if necessary
+           the port. The values of remote_md5 and remote_sha1 are those
+           computed on the file in the remote data store. These can be used
+           to verify uploads and downloads.)
+        :returns: instance of Long
+        """
+        # ctx is the context object
+        # return variables are: returnVal
+        #BEGIN set_public_read
+        returnVal = self.handler.add_read_acl(hids, ctx['user_id'])
+        #END set_public_read
+
+        # At some point might do deeper type checking...
+        if not isinstance(returnVal, int):
+            raise ValueError('Method set_public_read return value ' +
                              'returnVal is not type int as required.')
         # return the results
         return [returnVal]

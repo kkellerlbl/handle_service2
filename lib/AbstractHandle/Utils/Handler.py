@@ -4,6 +4,7 @@ from time import gmtime, strftime
 import uuid
 
 from AbstractHandle.Utils.MongoUtil import MongoUtil
+from AbstractHandle.Utils.ShockUtil import ShockUtil
 
 
 class Handler:
@@ -58,8 +59,26 @@ class Handler:
 
         return handle
 
+    def _get_admin_users(self, config):
+        """
+        fetch admin users for handle service who can grant shock acl
+        """
+        admin_users = list()
+        allowed_users = config.get('allowed-users')
+
+        if isinstance(allowed_users, list):
+            admin_users.extend(allowed_users)
+        else:
+            admin_users.extend(allowed_users.split(','))
+
+        return list(set(admin_users))
+
     def __init__(self, config):
         self.mongo_util = MongoUtil(config)
+        self.shock_util = ShockUtil(config)
+
+        self.admin_users = self._get_admin_users(config)
+
         logging.basicConfig(format='%(created)s %(levelname)s: %(message)s',
                             level=logging.INFO)
 
@@ -128,3 +147,64 @@ class Handler:
         deleted_count = self.mongo_util.delete_many(handles)
 
         return deleted_count
+
+    def is_owner(self, hids, user_id):
+        """
+        check and see if token user is owner.username from shock node
+        """
+
+        handles = self.fetch_handles_by({'elements': hids, 'field_name': 'hid'})
+
+        for handle in handles:
+            node_type = handle.get('type')
+            if node_type != 'shock':
+                raise ValueError('Do not support node type other than Shock')
+
+            node_id = handle.get('id')
+            owner = self.shock_util.get_owner(node_id)
+
+            if owner != user_id:
+                return False
+
+        return True
+
+    def are_readable(self, hids):
+        """
+        check if nodes associated with handles is reachable/readable
+        """
+
+        handles = self.fetch_handles_by({'elements': hids, 'field_name': 'hid'})
+
+        for handle in handles:
+            node_type = handle.get('type')
+            if node_type != 'shock':
+                raise ValueError('Do not support node type other than Shock')
+
+            node_id = handle.get('id')
+
+            is_readable = self.shock_util.is_readable(node_id)
+
+            if not is_readable:
+                return False
+
+        return True
+
+    def add_read_acl(self, hids, user_id, username=None):
+        """
+        grand readable acl for username or global if username is empty
+        """
+
+        if user_id not in self.admin_users:
+            raise ValueError('User {} may not run add_read_acl/set_public_read method'.format(user_id))
+
+        handles = self.fetch_handles_by({'elements': hids, 'field_name': 'hid'})
+
+        for handle in handles:
+            node_type = handle.get('type')
+            if node_type != 'shock':
+                raise ValueError('Do not support node type other than Shock')
+
+            node_id = handle.get('id')
+            self.shock_util.add_read_acl(node_id, username=username)
+
+        return True

@@ -11,6 +11,8 @@ from mongo_util import MongoHelper
 from AbstractHandle.Utils.Handler import Handler
 from AbstractHandle.Utils.MongoUtil import MongoUtil
 
+from unittest import mock
+
 
 class HandlerTest(unittest.TestCase):
 
@@ -160,7 +162,7 @@ class HandlerTest(unittest.TestCase):
 
         self.assertIn('Cannot delete handles not created by owner', str(context.exception.args))
 
-    def test_delete_handles_okay(self):
+    def test_delete_handles_ok(self):
         self.start_test()
         handler = self.getHandler()
 
@@ -178,3 +180,80 @@ class HandlerTest(unittest.TestCase):
         delete_count = handler.delete_handles(handles_to_delete, self.user_id)
 
         self.assertEqual(delete_count, len(hids_to_delete))
+
+    def test_is_owner_ok(self):
+        self.start_test()
+        handler = self.getHandler()
+
+        hids = list()
+
+        handle = {'id': '4cb26117-9793-4354-98a6-926c02a7bd0e',  # use one of `tgu2` node
+                  'file_name': 'file_name',
+                  'type': 'shock',
+                  'url': 'https://ci.kbase.us/services/shock-api'}
+        hid = handler.persist_handle(handle, self.user_id)
+        hids.append(hid)
+
+        handle = {'id': 'cadf4bd8-7d95-4edd-994c-b50e29c25e50',  # use one of `tgu2` node
+                  'file_name': 'file_name',
+                  'type': 'shock',
+                  'url': 'https://ci.kbase.us/services/shock-api'}
+        hid = handler.persist_handle(handle, self.user_id)
+        hids.append(hid)
+
+        is_owner = handler.is_owner(hids, 'tgu2')
+        self.assertTrue(is_owner)
+
+        is_owner = handler.is_owner(hids, 'tgu3')
+        self.assertFalse(is_owner)
+
+        handles_to_delete = handler.fetch_handles_by({'elements': hids, 'field_name': 'hid'})
+        delete_count = handler.delete_handles(handles_to_delete, self.user_id)
+        self.assertEqual(delete_count, len(hids))
+
+    def test_are_readable_ok(self):
+        self.start_test()
+        handler = self.getHandler()
+
+        hids = list()
+
+        handle = {'id': '4cb26117-9793-4354-98a6-926c02a7bd0e',  # use one of `tgu2` node
+                  'file_name': 'file_name',
+                  'type': 'shock',
+                  'url': 'https://ci.kbase.us/services/shock-api'}
+        hid = handler.persist_handle(handle, self.user_id)
+        hids.append(hid)
+
+        handle = {'id': 'cadf4bd8-7d95-4edd-994c-b50e29c25e50',  # use one of `tgu2` node
+                  'file_name': 'file_name',
+                  'type': 'shock',
+                  'url': 'https://ci.kbase.us/services/shock-api'}
+        hid = handler.persist_handle(handle, self.user_id)
+        hids.append(hid)
+
+        are_readable = handler.are_readable(hids)
+        self.assertTrue(are_readable)
+
+        handles_to_delete = handler.fetch_handles_by({'elements': hids, 'field_name': 'hid'})
+        delete_count = handler.delete_handles(handles_to_delete, self.user_id)
+        self.assertEqual(delete_count, len(hids))
+
+    # def test_add_read_acl_ok(self):
+    #     self.start_test()
+    #     handler = self.getHandler()
+
+    #     hids = list()
+
+    #     handle = {'id': '4cb26117-9793-4354-98a6-926c02a7bd0e',  # use one of `tgu2` node
+    #               'file_name': 'file_name',
+    #               'type': 'shock',
+    #               'url': 'https://ci.kbase.us/services/shock-api'}
+    #     hid = handler.persist_handle(handle, self.user_id)
+    #     hids.append(hid)
+
+    #     handler.add_read_acl(hids, self.user_id, 'test_user')
+    #     handler.add_read_acl(hids, self.user_id)
+
+    #     handles_to_delete = handler.fetch_handles_by({'elements': hids, 'field_name': 'hid'})
+    #     delete_count = handler.delete_handles(handles_to_delete, self.user_id)
+    #     self.assertEqual(delete_count, len(hids))
