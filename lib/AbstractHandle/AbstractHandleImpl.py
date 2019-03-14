@@ -276,6 +276,9 @@ provides a programmatic access to a remote file store
         # ctx is the context object
         # return variables are: returnVal
         #BEGIN are_readable
+        is_owner = self.is_owner(ctx, hids)[0]
+
+        returnVal = is_owner
         #END are_readable
 
         # At some point might do deeper type checking...
