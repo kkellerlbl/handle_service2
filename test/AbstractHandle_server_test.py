@@ -76,20 +76,11 @@ class handle_serviceTest(unittest.TestCase):
     def getContext(self):
         return self.__class__.ctx
 
-    def createMongoDB(self):
-        if hasattr(self.__class__, 'my_client'):
-            return self.__class__.my_client
-
-        my_client = self.mongo_helper.create_test_db()
-
-        self.__class__.my_client = my_client
-        return my_client
-
     def start_test(self):
         testname = inspect.stack()[1][3]
         print('\n*** starting test: ' + testname + ' **')
 
-    def test_fetch_handles_by_okay(self):
+    def test_fetch_handles_by_ok(self):
         self.start_test()
         handler = self.getImpl()
 
@@ -115,7 +106,7 @@ class handle_serviceTest(unittest.TestCase):
         self.assertFalse('_id' in handle)
         self.assertEqual(handle.get('hid'), 67712)
 
-    def test_ids_to_handles_okay(self):
+    def test_ids_to_handles_ok(self):
         self.start_test()
         handler = self.getImpl()
 
@@ -126,7 +117,7 @@ class handle_serviceTest(unittest.TestCase):
         self.assertFalse('_id' in handle)
         self.assertEqual(handle.get('hid'), 67712)
 
-    def test_hids_to_handles_okay(self):
+    def test_hids_to_handles_ok(self):
         self.start_test()
         handler = self.getImpl()
 
@@ -135,7 +126,7 @@ class handle_serviceTest(unittest.TestCase):
         self.assertEqual(len(handles), 2)
         self.assertCountEqual(hids, [h.get('hid') for h in handles])
 
-    def test_persist_handle_okay(self):
+    def test_persist_handle_ok(self):
         self.start_test()
         handler = self.getImpl()
 
@@ -172,7 +163,7 @@ class handle_serviceTest(unittest.TestCase):
 
         self.mongo_util.delete_one(handle)
 
-    def test_delete_handles_okay(self):
+    def test_delete_handles_ok(self):
         self.start_test()
         handler = self.getImpl()
 
@@ -190,3 +181,37 @@ class handle_serviceTest(unittest.TestCase):
         delete_count = handler.delete_handles(self.ctx, handles_to_delete)[0]
 
         self.assertEqual(delete_count, len(hids_to_delete))
+
+    def test_is_owner_ok(self):
+        self.start_test()
+        handler = self.getImpl()
+
+        handles = [{'id': 'id',
+                    'file_name': 'file_name',
+                    'type': 'shock',
+                    'url': 'http://ci.kbase.us:7044/'}] * 2
+        hids = list()
+        for handle in handles:
+            # create handles created by current token user
+            hid = handler.persist_handle(self.ctx, handle)[0]
+            hids.append(hid)
+
+        is_owner = handler.is_owner(self.ctx, hids)[0]
+        self.assertTrue(is_owner)
+
+        new_handle = {'id': 'id',
+                      'file_name': 'file_name',
+                      'type': 'shock',
+                      'url': 'http://ci.kbase.us:7044/',
+                      'created_by': 'fake_user'}
+        # create a handle created by current token user
+        new_hid = handler.persist_handle(self.ctx, new_handle)[0]
+        hids.append(new_hid)
+
+        is_owner = handler.is_owner(self.ctx, hids)[0]
+        self.assertFalse(is_owner)
+
+        new_handles = handler.fetch_handles_by(self.ctx, {'elements': hids, 'field_name': 'hid'})[0]
+
+        for handle in new_handles:
+            self.mongo_util.delete_one(handle)

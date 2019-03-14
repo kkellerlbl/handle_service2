@@ -27,9 +27,7 @@ class MongoUtilTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        if hasattr(cls, 'wsName'):
-            cls.wsClient.delete_workspace({'workspace': cls.wsName})
-            print('Test workspace was deleted')
+        print('Finished testing MongoUtil')
 
     def getMongoUtil(self):
         return self.__class__.mongo_util

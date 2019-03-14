@@ -36,9 +36,7 @@ class HandlerTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        if hasattr(cls, 'wsName'):
-            cls.wsClient.delete_workspace({'workspace': cls.wsName})
-            print('Test workspace was deleted')
+        print('Finished testing Handler')
 
     def getHandler(self):
         return self.__class__.handler

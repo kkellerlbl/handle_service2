@@ -210,6 +210,10 @@ provides a programmatic access to a remote file store
         # ctx is the context object
         # return variables are: returnVal
         #BEGIN is_owner
+        handles = self.fetch_handles_by(ctx, {'elements': hids, 'field_name': 'hid'})[0]
+        handle_user = set([h.get('created_by') for h in handles])
+
+        returnVal = (handle_user == set([ctx['user_id']]))
         #END is_owner
 
         # At some point might do deeper type checking...
