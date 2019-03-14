@@ -1,4 +1,4 @@
-# handle_service2 release notes
+# handle_service release notes
 =========================================
 
 0.0.0

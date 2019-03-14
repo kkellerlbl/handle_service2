@@ -17,7 +17,7 @@ from jsonrpcbase import JSONRPCService, InvalidParamsError, KeywordError, \
 from jsonrpcbase import ServerError as JSONServerError
 
 from biokbase import log
-from handle_service2.authclient import KBaseAuth as _KBaseAuth
+from AbstractHandle.authclient import KBaseAuth as _KBaseAuth
 
 try:
     from ConfigParser import ConfigParser
@@ -45,14 +45,14 @@ def get_config():
     retconfig = {}
     config = ConfigParser()
     config.read(get_config_file())
-    for nameval in config.items(get_service_name() or 'handle_service2'):
+    for nameval in config.items(get_service_name() or 'AbstractHandle'):
         retconfig[nameval[0]] = nameval[1]
     return retconfig
 
 config = get_config()
 
-from handle_service2.handle_service2Impl import handle_service2  # noqa @IgnorePep8
-impl_handle_service2 = handle_service2(config)
+from AbstractHandle.AbstractHandleImpl import AbstractHandle  # noqa @IgnorePep8
+impl_AbstractHandle = AbstractHandle(config)
 
 
 class JSONObjectEncoder(json.JSONEncoder):
@@ -327,7 +327,7 @@ class Application(object):
                                    context['method'], context['call_id'])
 
     def __init__(self):
-        submod = get_service_name() or 'handle_service2'
+        submod = get_service_name() or 'AbstractHandle'
         self.userlog = log.log(
             submod, ip_address=True, authuser=True, module=True, method=True,
             call_id=True, changecallback=self.logcallback,
@@ -338,12 +338,40 @@ class Application(object):
         self.serverlog.set_log_level(6)
         self.rpc_service = JSONRPCServiceCustom()
         self.method_authentication = dict()
-        self.rpc_service.add(impl_handle_service2.run_handle_service2,
-                             name='handle_service2.run_handle_service2',
+        self.rpc_service.add(impl_AbstractHandle.persist_handle,
+                             name='AbstractHandle.persist_handle',
                              types=[dict])
-        self.method_authentication['handle_service2.run_handle_service2'] = 'required'  # noqa
-        self.rpc_service.add(impl_handle_service2.status,
-                             name='handle_service2.status',
+        self.method_authentication['AbstractHandle.persist_handle'] = 'required'  # noqa
+        self.rpc_service.add(impl_AbstractHandle.hids_to_handles,
+                             name='AbstractHandle.hids_to_handles',
+                             types=[list])
+        self.method_authentication['AbstractHandle.hids_to_handles'] = 'required'  # noqa
+        self.rpc_service.add(impl_AbstractHandle.ids_to_handles,
+                             name='AbstractHandle.ids_to_handles',
+                             types=[list])
+        self.method_authentication['AbstractHandle.ids_to_handles'] = 'required'  # noqa
+        self.rpc_service.add(impl_AbstractHandle.fetch_handles_by,
+                             name='AbstractHandle.fetch_handles_by',
+                             types=[dict])
+        self.method_authentication['AbstractHandle.fetch_handles_by'] = 'required'  # noqa
+        self.rpc_service.add(impl_AbstractHandle.is_owner,
+                             name='AbstractHandle.is_owner',
+                             types=[list])
+        self.method_authentication['AbstractHandle.is_owner'] = 'required'  # noqa
+        self.rpc_service.add(impl_AbstractHandle.delete_handles,
+                             name='AbstractHandle.delete_handles',
+                             types=[list])
+        self.method_authentication['AbstractHandle.delete_handles'] = 'required'  # noqa
+        self.rpc_service.add(impl_AbstractHandle.are_readable,
+                             name='AbstractHandle.are_readable',
+                             types=[list])
+        self.method_authentication['AbstractHandle.are_readable'] = 'required'  # noqa
+        self.rpc_service.add(impl_AbstractHandle.is_readable,
+                             name='AbstractHandle.is_readable',
+                             types=[str])
+        self.method_authentication['AbstractHandle.is_readable'] = 'required'  # noqa
+        self.rpc_service.add(impl_AbstractHandle.status,
+                             name='AbstractHandle.status',
                              types=[dict])
         authurl = config.get(AUTH) if config else None
         self.auth_client = _KBaseAuth(authurl)
@@ -398,7 +426,7 @@ class Application(object):
                             err = JSONServerError()
                             err.data = (
                                 'Authentication required for ' +
-                                'handle_service2 ' +
+                                'AbstractHandle ' +
                                 'but no authentication header was passed')
                             raise err
                         elif token is None and auth_req == 'optional':
