@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-import time
 import unittest
 from configparser import ConfigParser
 import inspect
@@ -10,6 +9,7 @@ from AbstractHandle.authclient import KBaseAuth as _KBaseAuth
 
 from mongo_util import MongoHelper
 from AbstractHandle.Utils.Handler import Handler
+from AbstractHandle.Utils.MongoUtil import MongoUtil
 
 
 class HandlerTest(unittest.TestCase):
@@ -23,7 +23,6 @@ class HandlerTest(unittest.TestCase):
         config.read(config_file)
         for nameval in config.items('AbstractHandle'):
             cls.cfg[nameval[0]] = nameval[1]
-        cls.cfg['KB_AUTH_TOKEN'] = token
         # Getting username from Auth profile for token
         authServiceUrl = cls.cfg['auth-service-url']
         auth_client = _KBaseAuth(authServiceUrl)
@@ -33,6 +32,7 @@ class HandlerTest(unittest.TestCase):
         cls.my_client = cls.mongo_helper.create_test_db(db=cls.cfg['mongo-database'],
                                                         col=cls.cfg['mongo-collection'])
         cls.handler = Handler(cls.cfg)
+        cls.mongo_util = MongoUtil(cls.cfg)
 
     @classmethod
     def tearDownClass(cls):
@@ -49,7 +49,7 @@ class HandlerTest(unittest.TestCase):
 
     def test_init_ok(self):
         self.start_test()
-        class_attri = ['token', 'mongo_util']
+        class_attri = ['mongo_util']
         handler = self.getHandler()
         self.assertTrue(set(class_attri) <= set(handler.__dict__.keys()))
 
@@ -149,3 +149,34 @@ class HandlerTest(unittest.TestCase):
         self.assertEqual(handle.get('created_by'), self.user_id)
 
         self.assertEqual(new_hid, hid)
+
+        self.mongo_util.delete_one(handle)
+
+    def test_delete_handles_fail(self):
+        self.start_test()
+        handler = self.getHandler()
+
+        with self.assertRaises(ValueError) as context:
+            handles = [{'created_by': 'fake_user'}]
+            handler.delete_handles(handles, self.user_id)
+
+        self.assertIn('Cannot delete handles not created by owner', str(context.exception.args))
+
+    def test_delete_handles_okay(self):
+        self.start_test()
+        handler = self.getHandler()
+
+        handles = [{'id': 'id',
+                    'file_name': 'file_name',
+                    'type': 'shock',
+                    'url': 'http://ci.kbase.us:7044/'}] * 2
+        hids_to_delete = list()
+        for handle in handles:
+            hid = handler.persist_handle(handle, self.user_id)
+            hids_to_delete.append(hid)
+
+        handles_to_delete = handler.fetch_handles_by({'elements': hids_to_delete, 'field_name': 'hid'})
+
+        delete_count = handler.delete_handles(handles_to_delete, self.user_id)
+
+        self.assertEqual(delete_count, len(hids_to_delete))

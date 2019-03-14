@@ -5,8 +5,6 @@ from configparser import ConfigParser
 import inspect
 import copy
 
-from AbstractHandle.authclient import KBaseAuth as _KBaseAuth
-
 from mongo_util import MongoHelper
 from AbstractHandle.Utils.MongoUtil import MongoUtil
 
@@ -15,18 +13,12 @@ class MongoUtilTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        token = os.environ.get('KB_AUTH_TOKEN', None)
         config_file = os.environ.get('KB_DEPLOYMENT_CONFIG', None)
         cls.cfg = {}
         config = ConfigParser()
         config.read(config_file)
         for nameval in config.items('AbstractHandle'):
             cls.cfg[nameval[0]] = nameval[1]
-        cls.cfg['KB_AUTH_TOKEN'] = token
-        # Getting username from Auth profile for token
-        authServiceUrl = cls.cfg['auth-service-url']
-        auth_client = _KBaseAuth(authServiceUrl)
-        user_id = auth_client.get_user(token)
 
         cls.mongo_helper = MongoHelper()
         cls.my_client = cls.mongo_helper.create_test_db(db=cls.cfg['mongo-database'],
@@ -56,7 +48,7 @@ class MongoUtilTest(unittest.TestCase):
 
     def test_init_ok(self):
         self.start_test()
-        class_attri = ['token', 'mongo_host', 'mongo_port', 'mongo_database', 'mongo_collection']
+        class_attri = ['mongo_host', 'mongo_port', 'mongo_database', 'mongo_collection']
         mongo_util = self.getMongoUtil()
         self.assertTrue(set(class_attri) <= set(mongo_util.__dict__.keys()))
 
@@ -153,3 +145,28 @@ class MongoUtilTest(unittest.TestCase):
         self.assertEqual(mongo_util.handle_collection.find().count(), 10)
         docs = mongo_util.find_in([hid], 'hid', projection=None)
         self.assertEqual(docs.count(), 1)
+
+    def test_delete_many_ok(self):
+        self.start_test()
+        mongo_util = self.getMongoUtil()
+        docs = mongo_util.handle_collection.find()
+        self.assertEqual(docs.count(), 10)
+
+        docs_to_delete = list()
+        docs_to_delete.append(docs.next())
+        docs_to_delete.append(docs.next())
+        docs_to_delete = docs_to_delete * 2  # test delete duplicate items
+        deleted_count = mongo_util.delete_many(docs_to_delete)
+        self.assertEqual(deleted_count, 2)
+        self.assertEqual(mongo_util.handle_collection.find().count(), 8)
+        docs = mongo_util.find_in([doc.get('hid') for doc in docs_to_delete], 'hid')
+        self.assertEqual(docs.count(), 0)
+
+        for doc in docs_to_delete:
+            try:
+                mongo_util.insert_one(doc)
+            except Exception:
+                pass
+        self.assertEqual(mongo_util.handle_collection.find().count(), 10)
+        docs = mongo_util.find_in([doc.get('hid') for doc in docs_to_delete], 'hid')
+        self.assertEqual(docs.count(), 2)

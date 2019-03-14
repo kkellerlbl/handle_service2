@@ -62,12 +62,12 @@ module AbstractHandle {
       Given a list of handle ids, this function determines if the underlying data is owned by the caller.
       If any one of the handle ids reference unreadable data this function returns false.
     */
-    funcdef is_owner(list<HandleId>) returns(int) authentication required;
+    funcdef is_owner(list<HandleId> hids) returns(int) authentication required;
 
     /*
       The delete_handles function takes a list of handles and deletes them on the handle service server.
     */
-    funcdef delete_handles(list<Handle> handles) returns (list<HandleId> removed_hids) authentication optional;
+    funcdef delete_handles(list<Handle> handles) returns (int deleted_count) authentication required;
 
     /*
       Given a list of handle ids, this function determines if the underlying data is readable by the caller.

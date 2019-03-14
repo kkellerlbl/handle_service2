@@ -25,7 +25,7 @@ provides a programmatic access to a remote file store
     ######################################### noqa
     VERSION = "0.0.1"
     GIT_URL = "git@github.com:Tianhao-Gu/handle_service2.git"
-    GIT_COMMIT_HASH = "fe8686f5ba6f253cc5aa18fbbd32a57d2478049e"
+    GIT_COMMIT_HASH = "941d8649337b659c7cfa1b5a812a69d9d81585fd"
 
     #BEGIN_CLASS_HEADER
     #END_CLASS_HEADER
@@ -191,11 +191,11 @@ provides a programmatic access to a remote file store
         # return the results
         return [handles]
 
-    def is_owner(self, ctx, arg_1):
+    def is_owner(self, ctx, hids):
         """
         Given a list of handle ids, this function determines if the underlying data is owned by the caller.
         If any one of the handle ids reference unreadable data this function returns false.
-        :param arg_1: instance of list of type "HandleId" (Handle provides a
+        :param hids: instance of list of type "HandleId" (Handle provides a
            unique reference that enables access to the data files through
            functions provided as part of the HandleService. In the case of
            using shock, the id is the node id. In the case of using shock the
@@ -236,31 +236,22 @@ provides a programmatic access to a remote file store
            type "NodeId", parameter "type" of String, parameter "url" of
            String, parameter "remote_md5" of String, parameter "remote_sha1"
            of String
-        :returns: instance of list of type "HandleId" (Handle provides a
-           unique reference that enables access to the data files through
-           functions provided as part of the HandleService. In the case of
-           using shock, the id is the node id. In the case of using shock the
-           value of type is shock. In the future these values should
-           enumerated. The value of url is the http address of the shock
-           server, including the protocol (http or https) and if necessary
-           the port. The values of remote_md5 and remote_sha1 are those
-           computed on the file in the remote data store. These can be used
-           to verify uploads and downloads.)
+        :returns: instance of Long
         """
         # ctx is the context object
-        # return variables are: removed_hids
+        # return variables are: deleted_count
         #BEGIN delete_handles
-        hids_to_delete = list(set([h.get('hid') for h in handles]))
-        removed_hids = hids_to_delete
+
+        deleted_count = self.handler.delete_handles(handles, ctx['user_id'])
 
         #END delete_handles
 
         # At some point might do deeper type checking...
-        if not isinstance(removed_hids, list):
+        if not isinstance(deleted_count, int):
             raise ValueError('Method delete_handles return value ' +
-                             'removed_hids is not type list as required.')
+                             'deleted_count is not type int as required.')
         # return the results
-        return [removed_hids]
+        return [deleted_count]
 
     def are_readable(self, ctx, hids):
         """

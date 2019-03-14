@@ -4,14 +4,15 @@ import time
 import unittest
 from configparser import ConfigParser
 import inspect
+import copy
 
 from AbstractHandle.AbstractHandleImpl import AbstractHandle
 from AbstractHandle.AbstractHandleServer import MethodContext
 from AbstractHandle.authclient import KBaseAuth as _KBaseAuth
+from AbstractHandle.Utils.MongoUtil import MongoUtil
 
 from installed_clients.WorkspaceClient import Workspace
 
-from sql_util import SQLHelper
 from mongo_util import MongoHelper
 
 
@@ -29,12 +30,12 @@ class handle_serviceTest(unittest.TestCase):
         # Getting username from Auth profile for token
         authServiceUrl = cls.cfg['auth-service-url']
         auth_client = _KBaseAuth(authServiceUrl)
-        user_id = auth_client.get_user(token)
+        cls.user_id = auth_client.get_user(token)
         # WARNING: don't call any logging methods on the context object,
         # it'll result in a NoneType error
         cls.ctx = MethodContext(None)
         cls.ctx.update({'token': token,
-                        'user_id': user_id,
+                        'user_id': cls.user_id,
                         'provenance': [
                             {'service': 'AbstractHandle',
                              'method': 'please_never_use_it_in_production',
@@ -46,10 +47,10 @@ class handle_serviceTest(unittest.TestCase):
         cls.serviceImpl = AbstractHandle(cls.cfg)
         cls.scratch = cls.cfg['scratch']
         cls.callback_url = os.environ['SDK_CALLBACK_URL']
-        cls.sql_helper = SQLHelper()
         cls.mongo_helper = MongoHelper()
         cls.my_client = cls.mongo_helper.create_test_db(db=cls.cfg['mongo-database'],
                                                         col=cls.cfg['mongo-collection'])
+        cls.mongo_util = MongoUtil(cls.cfg)
 
     @classmethod
     def tearDownClass(cls):
@@ -138,15 +139,54 @@ class handle_serviceTest(unittest.TestCase):
         self.start_test()
         handler = self.getImpl()
 
-        new_hid = 68021
-        handle = {'hid': new_hid,
-                  'id': '7a2ff7c8-d87d-4c25-ad25-5f85ea794afa',
-                  'file_name': 'tmp_fastq.fq.gz',
+        handle = {'id': 'id',
+                  'file_name': 'file_name',
                   'type': 'shock',
-                  'url': 'https://ci.kbase.us/services/shock-api',
-                  'remote_md5': '05361e0506af15be6701b175adbb23e4',
-                  'remote_sha1': None,
-                  'created_by': 'tgu2',
-                  'creation_date': '2016-12-21 21:45:39'}
+                  'url': 'http://ci.kbase.us:7044/'}
+        # testing persist_handle with non-existing handle (inserting a handle)
         hid = handler.persist_handle(self.ctx, handle)[0]
-        self.assertEqual(hid, str(new_hid))
+        handles = handler.fetch_handles_by(self.ctx, {'elements': [hid], 'field_name': 'hid'})[0]
+        self.assertEqual(len(handles), 1)
+        handle = handles[0]
+        self.assertEqual(handle.get('hid'), hid)
+        self.assertEqual(handle.get('id'), 'id')
+        self.assertEqual(handle.get('file_name'), 'file_name')
+        self.assertEqual(handle.get('created_by'), self.user_id)
+
+        # testing persist_handle with existing handle (updating a handle)
+        new_handle = copy.deepcopy(handle)
+        new_file_name = 'new_file_name'
+        new_id = 'new_id'
+        new_handle['file_name'] = new_file_name
+        new_handle['id'] = new_id
+        new_hid = handler.persist_handle(self.ctx, new_handle)[0]
+        handles = handler.fetch_handles_by(self.ctx, {'elements': [new_hid], 'field_name': 'hid'})[0]
+        self.assertEqual(len(handles), 1)
+        handle = handles[0]
+        self.assertEqual(handle.get('hid'), new_hid)
+        self.assertEqual(handle.get('id'), new_id)
+        self.assertEqual(handle.get('file_name'), new_file_name)
+        self.assertEqual(handle.get('created_by'), self.user_id)
+
+        self.assertEqual(new_hid, hid)
+
+        self.mongo_util.delete_one(handle)
+
+    def test_delete_handles_okay(self):
+        self.start_test()
+        handler = self.getImpl()
+
+        handles = [{'id': 'id',
+                    'file_name': 'file_name',
+                    'type': 'shock',
+                    'url': 'http://ci.kbase.us:7044/'}] * 2
+        hids_to_delete = list()
+        for handle in handles:
+            hid = handler.persist_handle(self.ctx, handle)[0]
+            hids_to_delete.append(hid)
+
+        handles_to_delete = handler.fetch_handles_by(self.ctx, {'elements': hids_to_delete, 'field_name': 'hid'})[0]
+
+        delete_count = handler.delete_handles(self.ctx, handles_to_delete)[0]
+
+        self.assertEqual(delete_count, len(hids_to_delete))

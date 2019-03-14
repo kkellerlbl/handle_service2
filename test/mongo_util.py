@@ -1,6 +1,4 @@
 import logging
-import os
-import pymongo
 from pymongo import MongoClient
 import subprocess
 
@@ -67,12 +65,9 @@ class MongoHelper:
 
         handles = self._get_default_handles()
 
-        for handle in handles:
-            query = {'hid': handle.get('hid')}
-            mydoc = my_collection.find(query)
+        my_collection.delete_many({})
 
-            if not mydoc.count():
-                my_collection.insert_one(handle)
+        my_collection.insert_many(handles)
 
         logging.info('created db: {}'.format(my_client.list_database_names()))
 

@@ -3,9 +3,7 @@ import logging
 from time import gmtime, strftime
 import uuid
 
-from AbstractHandle.authclient import KBaseAuth as _KBaseAuth
 from AbstractHandle.Utils.MongoUtil import MongoUtil
-import copy
 
 
 class Handler:
@@ -61,15 +59,14 @@ class Handler:
         return handle
 
     def __init__(self, config):
-        self.token = config['KB_AUTH_TOKEN']
-        authServiceUrl = config['auth-service-url']
-        auth_client = _KBaseAuth(authServiceUrl)
-        self.user_id = auth_client.get_user(self.token)
         self.mongo_util = MongoUtil(config)
         logging.basicConfig(format='%(created)s %(levelname)s: %(message)s',
                             level=logging.INFO)
 
     def fetch_handles_by(self, params):
+        """
+        query DB and return if element match one of entry in field column
+        """
         logging.info('start fetching handles')
 
         self.validate_params(params, ['elements', 'field_name'])
@@ -86,6 +83,12 @@ class Handler:
         return handles
 
     def persist_handle(self, handle, user_id):
+        """
+        writes the handle to a persistent store
+
+        insert handle if handle does not exist
+        otherwise update handle if it's created by token user
+        """
         logging.info('start persisting handle')
 
         handle = self._process_handle(handle, user_id)
@@ -109,3 +112,19 @@ class Handler:
             self.mongo_util.insert_one(handle)
 
         return str(hid)
+
+    def delete_handles(self, handles, user_id):
+        """
+        delete handles
+
+        raise error if any of handles are not created by token user
+        """
+
+        handle_user = set([h.get('created_by') for h in handles])
+
+        if not (handle_user == set([user_id])):
+            raise ValueError('Cannot delete handles not created by owner')
+
+        deleted_count = self.mongo_util.delete_many(handles)
+
+        return deleted_count

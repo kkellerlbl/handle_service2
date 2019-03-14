@@ -361,7 +361,7 @@ class Application(object):
         self.rpc_service.add(impl_AbstractHandle.delete_handles,
                              name='AbstractHandle.delete_handles',
                              types=[list])
-        self.method_authentication['AbstractHandle.delete_handles'] = 'optional'  # noqa
+        self.method_authentication['AbstractHandle.delete_handles'] = 'required'  # noqa
         self.rpc_service.add(impl_AbstractHandle.are_readable,
                              name='AbstractHandle.are_readable',
                              types=[list])

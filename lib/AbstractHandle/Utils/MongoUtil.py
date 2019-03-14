@@ -50,7 +50,6 @@ class MongoUtil:
         return my_collection
 
     def __init__(self, config):
-        self.token = config['KB_AUTH_TOKEN']
         self.mongo_host = config['mongo-host']
         self.mongo_port = int(config['mongo-port'])
         self.mongo_database = config['mongo-database']
@@ -134,3 +133,24 @@ class MongoUtil:
             raise ValueError(error_msg)
 
         return True
+
+    def delete_many(self, docs):
+        """
+        delete a docs
+        """
+        logging.info('start deleting documents')
+
+        try:
+            hids_to_delete = list(set([doc.get('hid') for doc in docs]))
+            delete_filter = {'hid': {'$in': hids_to_delete}}
+            result = self.handle_collection.delete_many(delete_filter)
+        except Exception as e:
+            error_msg = 'Connot delete docs\n'
+            error_msg += 'ERROR -- {}:\n{}'.format(
+                            e,
+                            ''.join(traceback.format_exception(None, e, e.__traceback__)))
+            raise ValueError(error_msg)
+        else:
+            deleted_count = result.deleted_count
+
+        return deleted_count
