@@ -3,13 +3,15 @@ import os
 import unittest
 from configparser import ConfigParser
 import inspect
+import requests as _requests
+
 
 from AbstractHandle.authclient import KBaseAuth as _KBaseAuth
 
 from AbstractHandle.Utils.ShockUtil import ShockUtil
 
 
-class HandlerTest(unittest.TestCase):
+class ShockUtilTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -20,24 +22,52 @@ class HandlerTest(unittest.TestCase):
         config.read(config_file)
         for nameval in config.items('AbstractHandle'):
             cls.cfg[nameval[0]] = nameval[1]
+
         # Getting username from Auth profile for token
         authServiceUrl = cls.cfg['auth-service-url']
         auth_client = _KBaseAuth(authServiceUrl)
         cls.user_id = auth_client.get_user(cls.token)
 
         cls.shock_util = ShockUtil(cls.cfg)
+        cls.shock_url = cls.cfg['shock-url']
+        cls.shock_ids_to_delete = list()
 
     @classmethod
     def tearDownClass(cls):
+        if hasattr(cls, 'shock_ids_to_delete'):
+            print('Nodes to delete: {}'.format(cls.shock_ids_to_delete))
+            cls.deleteShockID(cls.shock_ids_to_delete)
+
         print('Finished testing ShockUtil')
+
+    @classmethod
+    def deleteShockID(cls, shock_ids):
+        headers = {'Authorization': 'OAuth {}'.format(cls.token)}
+        for shock_id in shock_ids:
+            end_point = os.path.join(cls.shock_url, 'node', shock_id)
+            resp = _requests.delete(end_point, headers=headers, allow_redirects=True)
+            if resp.status_code != 200:
+                print('Cannot detele shock node ' + shock_id)
+            else:
+                print('Deleted shock node ' + shock_id)
 
     def getShockUtil(self):
         return self.__class__.shock_util
 
-    def getNodeID(self):
-        node_id = 'a31db49f-447c-4fff-96d5-2981166c0b9b'  # for the simplicity using one of `tgu2` node
+    def createTestNode(self):
+        headers = {'Authorization': 'OAuth {}'.format(self.token)}
 
-        return node_id
+        end_point = os.path.join(self.shock_url, 'node')
+
+        resp = _requests.post(end_point, headers=headers)
+
+        if resp.status_code != 200:
+            raise ValueError('Grant user readable access failed.\nError Code: {}\n{}\n'
+                             .format(resp.status_code, resp.text))
+        else:
+            shock_id = resp.json().get('data').get('id')
+            self.shock_ids_to_delete.append(shock_id)
+            return shock_id
 
     def start_test(self):
         testname = inspect.stack()[1][3]
@@ -62,16 +92,16 @@ class HandlerTest(unittest.TestCase):
     def test_get_owner_ok(self):
         self.start_test()
         shock_util = self.getShockUtil()
-        node_id = self.getNodeID()
+        node_id = self.createTestNode()
 
         owner = shock_util.get_owner(node_id)
 
-        self.assertEqual(owner, 'tgu2')
+        self.assertEqual(owner, self.user_id)
 
     def test_is_readable_ok(self):
         self.start_test()
         shock_util = self.getShockUtil()
-        node_id = self.getNodeID()
+        node_id = self.createTestNode()
 
         is_readable = shock_util.is_readable(node_id)
         self.assertTrue(is_readable)
@@ -79,3 +109,47 @@ class HandlerTest(unittest.TestCase):
         node_id = 'fake_node_id'
         is_readable = shock_util.is_readable(node_id)
         self.assertFalse(is_readable)
+
+    def test_add_read_acl_ok(self):
+        self.start_test()
+        shock_util = self.getShockUtil()
+        node_id = self.createTestNode()
+
+        headers = {'Authorization': 'OAuth {}'.format(self.token)}
+        end_point = os.path.join(self.shock_url, 'node', node_id, 'acl/?verbosity=full')
+        resp = _requests.get(end_point, headers=headers)
+        data = resp.json()
+
+        # no public access at the beginning
+        self.assertFalse(data.get('data').get('public').get('read'))
+
+        # only token user has read access
+        users = [user.get('username') for user in data.get('data').get('read')]
+        self.assertCountEqual(users, [self.user_id])
+
+        # grant public read access
+        shock_util.add_read_acl(node_id)
+        resp = _requests.get(end_point, headers=headers)
+        data = resp.json()
+        self.assertTrue(data.get('data').get('public').get('read'))
+
+        # should work for already publicly accessable ndoes
+        shock_util.add_read_acl(node_id)
+        resp = _requests.get(end_point, headers=headers)
+        data = resp.json()
+        self.assertTrue(data.get('data').get('public').get('read'))
+
+        # test grant access to user who already has read access
+        shock_util.add_read_acl(node_id, username=self.user_id)
+        resp = _requests.get(end_point, headers=headers)
+        data = resp.json()
+        new_users = [user.get('username') for user in data.get('data').get('read')]
+        self.assertCountEqual(new_users, [self.user_id])
+
+        # grant access to tgu3 (Tian made this test so ^^)
+        new_user = 'tgu3'
+        shock_util.add_read_acl(node_id, username=new_user)
+        resp = _requests.get(end_point, headers=headers)
+        data = resp.json()
+        new_users = [user.get('username') for user in data.get('data').get('read')]
+        self.assertCountEqual(new_users, [self.user_id, new_user])
