@@ -10,6 +10,9 @@ class ShockUtil:
     def _get_header(self):
         return {'Authorization': 'OAuth {}'.format(self.token)}
 
+    def _get_admin_header(self):
+        return {'Authorization': 'OAuth {}'.format(self.admin_token)}
+
     def _grant_read_access(self, node_id, username=None):
         """
         grant readable acl for username or global if username is empty
@@ -38,8 +41,8 @@ class ShockUtil:
     def __init__(self, config):
         self.shock_url = config.get('shock-url')
         self.token = config.get('KB_AUTH_TOKEN')
-        if not self.token:
-            self.token = os.environ['KB_AUTH_TOKEN']
+        self.admin_token = config.get('admin-token')
+
         logging.basicConfig(format='%(created)s %(levelname)s: %(message)s',
                             level=logging.INFO)
 
@@ -91,7 +94,7 @@ class ShockUtil:
         check current acl and then grant readable acl to user or public
         """
 
-        headers = self._get_header()
+        headers = self._get_admin_header()
 
         end_point = os.path.join(self.shock_url, 'node', node_id, 'acl/?verbosity=full')
         resp = _requests.get(end_point, headers=headers)
