@@ -18,17 +18,18 @@ class HandlerTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        token = os.environ.get('KB_AUTH_TOKEN', None)
+        cls.token = os.environ.get('KB_AUTH_TOKEN', None)
         config_file = os.environ.get('KB_DEPLOYMENT_CONFIG', None)
-        cls.cfg = {}
+        cls.cfg = {'KB_AUTH_TOKEN': cls.token}
         config = ConfigParser()
         config.read(config_file)
         for nameval in config.items('AbstractHandle'):
             cls.cfg[nameval[0]] = nameval[1]
+        cls.cfg['admin-token'] = cls.token
         # Getting username from Auth profile for token
         authServiceUrl = cls.cfg['auth-service-url']
         auth_client = _KBaseAuth(authServiceUrl)
-        cls.user_id = auth_client.get_user(token)
+        cls.user_id = auth_client.get_user(cls.token)
 
         cls.mongo_helper = MongoHelper()
         cls.my_client = cls.mongo_helper.create_test_db(db=cls.cfg['mongo-database'],

@@ -22,7 +22,7 @@ class ShockUtilTest(unittest.TestCase):
         config.read(config_file)
         for nameval in config.items('AbstractHandle'):
             cls.cfg[nameval[0]] = nameval[1]
-
+        cls.cfg['admin-token'] = cls.token
         # Getting username from Auth profile for token
         authServiceUrl = cls.cfg['auth-service-url']
         auth_client = _KBaseAuth(authServiceUrl)
