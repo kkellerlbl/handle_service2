@@ -370,6 +370,14 @@ class Application(object):
                              name='AbstractHandle.is_readable',
                              types=[str])
         self.method_authentication['AbstractHandle.is_readable'] = 'required'  # noqa
+        self.rpc_service.add(impl_AbstractHandle.add_read_acl,
+                             name='AbstractHandle.add_read_acl',
+                             types=[list, str])
+        self.method_authentication['AbstractHandle.add_read_acl'] = 'required'  # noqa
+        self.rpc_service.add(impl_AbstractHandle.set_public_read,
+                             name='AbstractHandle.set_public_read',
+                             types=[list])
+        self.method_authentication['AbstractHandle.set_public_read'] = 'required'  # noqa
         self.rpc_service.add(impl_AbstractHandle.status,
                              name='AbstractHandle.status',
                              types=[dict])
