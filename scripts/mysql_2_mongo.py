@@ -55,7 +55,8 @@ def insert_one(my_collection, doc):
             raise ValueError(error_msg)
         else:
             return True
-    return False
+    else:
+        return False
 
 
 def main(argv):
