@@ -106,9 +106,6 @@ def main(argv):
     total_records = myresult[0][0]
     print('total MySQL record count: {}'.format(total_records))
 
-    mycursor.execute("SELECT COUNT(*) FROM Handle")
-    myresult = mycursor.fetchall()
-
     mycursor.execute("SELECT * FROM Handle")
     myresult = mycursor.fetchall()
 
