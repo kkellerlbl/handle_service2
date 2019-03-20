@@ -53,6 +53,10 @@ def insert_one(my_collection, doc):
                             e,
                             ''.join(traceback.format_exception(None, e, e.__traceback__)))
             raise ValueError(error_msg)
+        else:
+            return True
+    else:
+        return False
 
 
 def main(argv):
@@ -97,16 +101,28 @@ def main(argv):
     mongo_collection = 'handle'
     my_collection = connect_mongo(mongo_host, mongo_port, mongo_database, mongo_collection)
 
+    mycursor.execute("SELECT COUNT(*) FROM Handle")
+    myresult = mycursor.fetchall()
+    total_records = myresult[0][0]
+    print('total MySQL record count: {}'.format(total_records))
+
     mycursor.execute("SELECT * FROM Handle")
     myresult = mycursor.fetchall()
 
     columns = ['hid', 'id', 'file_name', 'type', 'url', 'remote_md5', 'remote_sha1',
                'created_by', 'creation_date']
 
+    insert_records = 0
     for x in myresult:
         doc = dict(zip(columns, x))
         doc['_id'] = doc['hid']
-        insert_one(my_collection, doc)
+        if insert_one(my_collection, doc):
+            insert_records += 1
+
+        if insert_records/5000 == 0:
+            print('inserted {} records'.format(insert_records))
+
+    print('totally inserted {} records'.format(insert_records))
 
 
 if __name__ == "__main__":
