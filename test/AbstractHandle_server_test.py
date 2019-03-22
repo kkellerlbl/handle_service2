@@ -5,11 +5,14 @@ import unittest
 from configparser import ConfigParser
 import inspect
 import copy
+import requests as _requests
+from unittest.mock import patch
 
 from AbstractHandle.AbstractHandleImpl import AbstractHandle
 from AbstractHandle.AbstractHandleServer import MethodContext
 from AbstractHandle.authclient import KBaseAuth as _KBaseAuth
 from AbstractHandle.Utils.MongoUtil import MongoUtil
+from AbstractHandle.Utils.Handler import Handler
 
 from installed_clients.WorkspaceClient import Workspace
 
@@ -20,22 +23,23 @@ class handle_serviceTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        token = os.environ.get('KB_AUTH_TOKEN', None)
+        cls.token = os.environ.get('KB_AUTH_TOKEN', None)
         config_file = os.environ.get('KB_DEPLOYMENT_CONFIG', None)
         cls.cfg = {}
         config = ConfigParser()
         config.read(config_file)
         for nameval in config.items('AbstractHandle'):
             cls.cfg[nameval[0]] = nameval[1]
-        cls.cfg['admin-token'] = token
+        cls.cfg['admin-token'] = cls.token
         # Getting username from Auth profile for token
         authServiceUrl = cls.cfg['auth-service-url']
         auth_client = _KBaseAuth(authServiceUrl)
-        cls.user_id = auth_client.get_user(token)
+        cls.user_id = auth_client.get_user(cls.token)
+        cls.shock_url = cls.cfg['shock-url']
         # WARNING: don't call any logging methods on the context object,
         # it'll result in a NoneType error
         cls.ctx = MethodContext(None)
-        cls.ctx.update({'token': token,
+        cls.ctx.update({'token': cls.token,
                         'user_id': cls.user_id,
                         'provenance': [
                             {'service': 'AbstractHandle',
@@ -52,12 +56,28 @@ class handle_serviceTest(unittest.TestCase):
         cls.my_client = cls.mongo_helper.create_test_db(db=cls.cfg['mongo-database'],
                                                         col=cls.cfg['mongo-collection'])
         cls.mongo_util = MongoUtil(cls.cfg)
+        cls.shock_ids_to_delete = list()
 
     @classmethod
     def tearDownClass(cls):
         if hasattr(cls, 'wsName'):
             cls.wsClient.delete_workspace({'workspace': cls.wsName})
             print('Test workspace was deleted')
+
+        if hasattr(cls, 'shock_ids_to_delete'):
+            print('Nodes to delete: {}'.format(cls.shock_ids_to_delete))
+            cls.deleteShockID(cls.shock_ids_to_delete)
+
+    @classmethod
+    def deleteShockID(cls, shock_ids):
+        headers = {'Authorization': 'OAuth {}'.format(cls.token)}
+        for shock_id in shock_ids:
+            end_point = os.path.join(cls.shock_url, 'node', shock_id)
+            resp = _requests.delete(end_point, headers=headers, allow_redirects=True)
+            if resp.status_code != 200:
+                print('Cannot detele shock node ' + shock_id)
+            else:
+                print('Deleted shock node ' + shock_id)
 
     def getWsClient(self):
         return self.__class__.wsClient
@@ -76,6 +96,21 @@ class handle_serviceTest(unittest.TestCase):
 
     def getContext(self):
         return self.__class__.ctx
+
+    def createTestNode(self):
+        headers = {'Authorization': 'OAuth {}'.format(self.token)}
+
+        end_point = os.path.join(self.shock_url, 'node')
+
+        resp = _requests.post(end_point, headers=headers)
+
+        if resp.status_code != 200:
+            raise ValueError('Grant user readable access failed.\nError Code: {}\n{}\n'
+                             .format(resp.status_code, resp.text))
+        else:
+            shock_id = resp.json().get('data').get('id')
+            self.shock_ids_to_delete.append(shock_id)
+            return shock_id
 
     def start_test(self):
         testname = inspect.stack()[1][3]
@@ -189,14 +224,16 @@ class handle_serviceTest(unittest.TestCase):
 
         hids = list()
 
-        handle = {'id': '4cb26117-9793-4354-98a6-926c02a7bd0e',  # use one of `tgu2` node
+        node_id = self.createTestNode()
+        handle = {'id': node_id,
                   'file_name': 'file_name',
                   'type': 'shock',
                   'url': 'https://ci.kbase.us/services/shock-api'}
         hid = handler.persist_handle(self.ctx, handle)[0]
         hids.append(hid)
 
-        handle = {'id': 'cadf4bd8-7d95-4edd-994c-b50e29c25e50',  # use one of `tgu2` node
+        node_id2 = self.createTestNode()
+        handle = {'id': node_id2,
                   'file_name': 'file_name',
                   'type': 'shock',
                   'url': 'https://ci.kbase.us/services/shock-api'}
@@ -204,7 +241,7 @@ class handle_serviceTest(unittest.TestCase):
         hids.append(hid)
 
         is_owner = handler.is_owner(self.ctx, hids)[0]
-        self.assertTrue(is_owner)  # TODO it will fail if test user is not tgu2
+        self.assertTrue(is_owner)
 
         new_handles = handler.fetch_handles_by(self.ctx, {'elements': hids, 'field_name': 'hid'})[0]
 
@@ -218,14 +255,16 @@ class handle_serviceTest(unittest.TestCase):
 
         hids = list()
 
-        handle = {'id': '4cb26117-9793-4354-98a6-926c02a7bd0e',  # use one of `tgu2` node
+        node_id = self.createTestNode()
+        handle = {'id': node_id,
                   'file_name': 'file_name',
                   'type': 'shock',
                   'url': 'https://ci.kbase.us/services/shock-api'}
         hid = handler.persist_handle(self.ctx, handle)[0]
         hids.append(hid)
 
-        handle = {'id': 'cadf4bd8-7d95-4edd-994c-b50e29c25e50',  # use one of `tgu2` node
+        node_id = self.createTestNode()
+        handle = {'id': node_id,
                   'file_name': 'file_name',
                   'type': 'shock',
                   'url': 'https://ci.kbase.us/services/shock-api'}
@@ -233,12 +272,74 @@ class handle_serviceTest(unittest.TestCase):
         hids.append(hid)
 
         are_readable = handler.are_readable(self.ctx, hids)[0]
-        self.assertTrue(are_readable)  # TODO it will fail if test user is not tgu2
+        self.assertTrue(are_readable)
 
         is_readable = handler.is_readable(self.ctx, hids[0])[0]
-        self.assertTrue(is_readable)  # TODO it will fail if test user is not tgu2
+        self.assertTrue(is_readable)
 
         new_handles = handler.fetch_handles_by(self.ctx, {'elements': hids, 'field_name': 'hid'})[0]
 
         for handle in new_handles:
             self.mongo_util.delete_one(handle)
+
+    @patch.object(Handler, "_is_admin_user", return_value=True)
+    def test_add_read_acl_ok(self, _is_admin_user):
+        self.start_test()
+        handler = self.getImpl()
+        node_id = self.createTestNode()
+
+        hids = list()
+
+        handle = {'id': node_id,
+                  'file_name': 'file_name',
+                  'type': 'shock',
+                  'url': 'https://ci.kbase.us/services/shock-api'}
+        hid = handler.persist_handle(self.ctx, handle)[0]
+        hids.append(hid)
+
+        headers = {'Authorization': 'OAuth {}'.format(self.token)}
+        end_point = os.path.join(self.shock_url, 'node', node_id, 'acl/?verbosity=full')
+        resp = _requests.get(end_point, headers=headers)
+        data = resp.json()
+
+        # no public access at the beginning
+        self.assertFalse(data.get('data').get('public').get('read'))
+
+        # only token user has read access
+        users = [user.get('username') for user in data.get('data').get('read')]
+        self.assertCountEqual(users, [self.user_id])
+
+        # grant public read access
+        succeed = handler.set_public_read(self.ctx, hids)[0]
+        self.assertTrue(succeed)
+        resp = _requests.get(end_point, headers=headers)
+        data = resp.json()
+        self.assertTrue(data.get('data').get('public').get('read'))
+
+        # should work for already publicly accessable ndoes
+        succeed = handler.set_public_read(self.ctx, hids)[0]
+        self.assertTrue(succeed)
+        resp = _requests.get(end_point, headers=headers)
+        data = resp.json()
+        self.assertTrue(data.get('data').get('public').get('read'))
+
+        # test grant access to user who already has read access
+        succeed = handler.add_read_acl(self.ctx, hids, username=self.user_id)[0]
+        self.assertTrue(succeed)
+        resp = _requests.get(end_point, headers=headers)
+        data = resp.json()
+        new_users = [user.get('username') for user in data.get('data').get('read')]
+        self.assertCountEqual(new_users, [self.user_id])
+
+        # grant access to tgu3
+        new_user = 'tgu3'
+        succeed = handler.add_read_acl(self.ctx, hids, username=new_user)[0]
+        self.assertTrue(succeed)
+        resp = _requests.get(end_point, headers=headers)
+        data = resp.json()
+        new_users = [user.get('username') for user in data.get('data').get('read')]
+        self.assertCountEqual(new_users, [self.user_id, new_user])
+
+        handles_to_delete = handler.fetch_handles_by(self.ctx, {'elements': hids, 'field_name': 'hid'})[0]
+        delete_count = handler.delete_handles(self.ctx, handles_to_delete)[0]
+        self.assertEqual(delete_count, len(hids))
