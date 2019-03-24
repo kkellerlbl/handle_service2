@@ -2,15 +2,21 @@
 import logging
 from time import gmtime, strftime
 import uuid
+import os
+import requests as _requests
 
 from AbstractHandle.Utils.MongoUtil import MongoUtil
 from AbstractHandle.Utils.ShockUtil import ShockUtil
+from AbstractHandle.Utils.TokenCache import TokenCache
 
 
 class Handler:
 
     FIELD_NAMES = ['hid', 'id', 'file_name', 'type', 'url', 'remote_md5', 'remote_sha1',
                    'created_by', 'creation_date']
+
+    AUTH_API_PATH = 'api/V2'
+    CACHE_EXPIRE_TIME = 300  # seconds
 
     @staticmethod
     def validate_params(params, expected, opt_param=set()):
@@ -59,25 +65,39 @@ class Handler:
 
         return handle
 
-    def _get_admin_users(self, config):
-        """
-        fetch admin users for handle service who can grant shock acl
-        """
-        admin_users = list()
-        allowed_users = config.get('allowed-users')
+    def _get_token_roles(self, token):
 
-        if isinstance(allowed_users, list):
-            admin_users.extend(allowed_users)
+        headers = {'Authorization': token}
+        end_point = os.path.join(self.auth_url, self.AUTH_API_PATH, 'me')
+
+        resp = _requests.get(end_point, headers=headers)
+
+        if resp.status_code != 200:
+            raise ValueError('Request owner failed.\nError Code: {}\n{}\n'
+                             .format(resp.status_code, resp.text))
         else:
-            admin_users.extend(allowed_users.split(','))
+            data = resp.json()
+            customroles = data.get('customroles')
+            return customroles
 
-        return list(set(admin_users))
+    def _is_admin_user(self, token):
+        fetched_token_info = self.token_cache.get(token)
+
+        if fetched_token_info:
+            customroles = fetched_token_info.get('customroles')
+        else:
+            customroles = self._get_token_roles(token)
+            self.token_cache[token] = {'customroles': customroles}
+
+        return not set(self.admin_roles).isdisjoint(customroles)
 
     def __init__(self, config):
         self.mongo_util = MongoUtil(config)
         self.shock_util = ShockUtil(config)
-
-        self.admin_users = self._get_admin_users(config)
+        self.token_cache = TokenCache(1000, self.CACHE_EXPIRE_TIME)
+        self.auth_url = config.get('auth-url')
+        self.admin_roles = [role.strip() for role in config.get('admin-roles').split(',')]
+        self.token = config.get('KB_AUTH_TOKEN')
 
         logging.basicConfig(format='%(created)s %(levelname)s: %(message)s',
                             level=logging.INFO)
@@ -189,13 +209,13 @@ class Handler:
 
         return True
 
-    def add_read_acl(self, hids, user_id, username=None):
+    def add_read_acl(self, hids, username=None):
         """
         grand readable acl for username or global if username is empty
         """
 
-        if user_id not in self.admin_users:
-            raise ValueError('User {} may not run add_read_acl/set_public_read method'.format(user_id))
+        if not self._is_admin_user(self.token):
+            raise ValueError('User may not run add_read_acl/set_public_read method')
 
         handles = self.fetch_handles_by({'elements': hids, 'field_name': 'hid'})
 

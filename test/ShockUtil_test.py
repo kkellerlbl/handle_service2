@@ -5,9 +5,7 @@ from configparser import ConfigParser
 import inspect
 import requests as _requests
 
-
 from AbstractHandle.authclient import KBaseAuth as _KBaseAuth
-
 from AbstractHandle.Utils.ShockUtil import ShockUtil
 
 

@@ -4,14 +4,13 @@ import unittest
 from configparser import ConfigParser
 import inspect
 import copy
+import requests as _requests
+from unittest.mock import patch
 
 from AbstractHandle.authclient import KBaseAuth as _KBaseAuth
-
 from mongo_util import MongoHelper
 from AbstractHandle.Utils.Handler import Handler
 from AbstractHandle.Utils.MongoUtil import MongoUtil
-
-from unittest import mock
 
 
 class HandlerTest(unittest.TestCase):
@@ -30,6 +29,7 @@ class HandlerTest(unittest.TestCase):
         authServiceUrl = cls.cfg['auth-service-url']
         auth_client = _KBaseAuth(authServiceUrl)
         cls.user_id = auth_client.get_user(cls.token)
+        cls.shock_url = cls.cfg['shock-url']
 
         cls.mongo_helper = MongoHelper()
         cls.my_client = cls.mongo_helper.create_test_db(db=cls.cfg['mongo-database'],
@@ -37,9 +37,25 @@ class HandlerTest(unittest.TestCase):
         cls.handler = Handler(cls.cfg)
         cls.mongo_util = MongoUtil(cls.cfg)
 
+        cls.shock_ids_to_delete = list()
+
     @classmethod
     def tearDownClass(cls):
+        if hasattr(cls, 'shock_ids_to_delete'):
+            print('Nodes to delete: {}'.format(cls.shock_ids_to_delete))
+            cls.deleteShockID(cls.shock_ids_to_delete)
         print('Finished testing Handler')
+
+    @classmethod
+    def deleteShockID(cls, shock_ids):
+        headers = {'Authorization': 'OAuth {}'.format(cls.token)}
+        for shock_id in shock_ids:
+            end_point = os.path.join(cls.shock_url, 'node', shock_id)
+            resp = _requests.delete(end_point, headers=headers, allow_redirects=True)
+            if resp.status_code != 200:
+                print('Cannot detele shock node ' + shock_id)
+            else:
+                print('Deleted shock node ' + shock_id)
 
     def getHandler(self):
         return self.__class__.handler
@@ -47,6 +63,21 @@ class HandlerTest(unittest.TestCase):
     def start_test(self):
         testname = inspect.stack()[1][3]
         print('\n*** starting test: ' + testname + ' **')
+
+    def createTestNode(self):
+        headers = {'Authorization': 'OAuth {}'.format(self.token)}
+
+        end_point = os.path.join(self.shock_url, 'node')
+
+        resp = _requests.post(end_point, headers=headers)
+
+        if resp.status_code != 200:
+            raise ValueError('Grant user readable access failed.\nError Code: {}\n{}\n'
+                             .format(resp.status_code, resp.text))
+        else:
+            shock_id = resp.json().get('data').get('id')
+            self.shock_ids_to_delete.append(shock_id)
+            return shock_id
 
     def test_init_ok(self):
         self.start_test()
@@ -239,22 +270,68 @@ class HandlerTest(unittest.TestCase):
         delete_count = handler.delete_handles(handles_to_delete, self.user_id)
         self.assertEqual(delete_count, len(hids))
 
-    # def test_add_read_acl_ok(self):
-    #     self.start_test()
-    #     handler = self.getHandler()
+    def test__get_token_roles(self):
+        self.start_test()
+        handler = self.getHandler()
 
-    #     hids = list()
+        customroles = handler._get_token_roles(self.token)
 
-    #     handle = {'id': '4cb26117-9793-4354-98a6-926c02a7bd0e',  # use one of `tgu2` node
-    #               'file_name': 'file_name',
-    #               'type': 'shock',
-    #               'url': 'https://ci.kbase.us/services/shock-api'}
-    #     hid = handler.persist_handle(handle, self.user_id)
-    #     hids.append(hid)
+        self.assertTrue(isinstance(customroles, list))
 
-    #     handler.add_read_acl(hids, self.user_id, 'test_user')
-    #     handler.add_read_acl(hids, self.user_id)
+    @patch.object(Handler, "_is_admin_user", return_value=True)
+    def test_add_read_acl_ok(self, _is_admin_user):
+        self.start_test()
+        handler = self.getHandler()
+        node_id = self.createTestNode()
 
-    #     handles_to_delete = handler.fetch_handles_by({'elements': hids, 'field_name': 'hid'})
-    #     delete_count = handler.delete_handles(handles_to_delete, self.user_id)
-    #     self.assertEqual(delete_count, len(hids))
+        hids = list()
+
+        handle = {'id': node_id,
+                  'file_name': 'file_name',
+                  'type': 'shock',
+                  'url': 'https://ci.kbase.us/services/shock-api'}
+        hid = handler.persist_handle(handle, self.user_id)
+        hids.append(hid)
+
+        headers = {'Authorization': 'OAuth {}'.format(self.token)}
+        end_point = os.path.join(self.shock_url, 'node', node_id, 'acl/?verbosity=full')
+        resp = _requests.get(end_point, headers=headers)
+        data = resp.json()
+
+        # no public access at the beginning
+        self.assertFalse(data.get('data').get('public').get('read'))
+
+        # only token user has read access
+        users = [user.get('username') for user in data.get('data').get('read')]
+        self.assertCountEqual(users, [self.user_id])
+
+        # grant public read access
+        handler.add_read_acl(hids)
+        resp = _requests.get(end_point, headers=headers)
+        data = resp.json()
+        self.assertTrue(data.get('data').get('public').get('read'))
+
+        # should work for already publicly accessable ndoes
+        handler.add_read_acl(hids)
+        resp = _requests.get(end_point, headers=headers)
+        data = resp.json()
+        self.assertTrue(data.get('data').get('public').get('read'))
+
+        # test grant access to user who already has read access
+        handler.add_read_acl(hids, username=self.user_id)
+        resp = _requests.get(end_point, headers=headers)
+        data = resp.json()
+        new_users = [user.get('username') for user in data.get('data').get('read')]
+        self.assertCountEqual(new_users, [self.user_id])
+
+        # grant access to tgu3
+        new_user = 'tgu3'
+        handler.add_read_acl(hids, username=new_user)
+        resp = _requests.get(end_point, headers=headers)
+        data = resp.json()
+        new_users = [user.get('username') for user in data.get('data').get('read')]
+        self.assertCountEqual(new_users, [self.user_id, new_user])
+
+        handles_to_delete = handler.fetch_handles_by({'elements': hids, 'field_name': 'hid'})
+        delete_count = handler.delete_handles(handles_to_delete, self.user_id)
+        self.assertEqual(delete_count, len(hids))

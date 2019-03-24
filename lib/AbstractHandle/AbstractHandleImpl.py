@@ -328,7 +328,7 @@ provides a programmatic access to a remote file store
         # ctx is the context object
         # return variables are: returnVal
         #BEGIN add_read_acl
-        returnVal = self.handler.add_read_acl(hids, ctx['user_id'], username=username)
+        returnVal = self.handler.add_read_acl(hids, username=username)
         #END add_read_acl
 
         # At some point might do deeper type checking...
@@ -357,7 +357,7 @@ provides a programmatic access to a remote file store
         # ctx is the context object
         # return variables are: returnVal
         #BEGIN set_public_read
-        returnVal = self.handler.add_read_acl(hids, ctx['user_id'])
+        returnVal = self.handler.add_read_acl(hids)
         #END set_public_read
 
         # At some point might do deeper type checking...
