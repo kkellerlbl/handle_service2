@@ -18,7 +18,7 @@ class TokenCache(TTLCache):
     but expire sooner if the token itself expires.
     """
 
-    def __getitem__(self, key: str, cache_getitem: Any = Cache.__getitem__):
+    def __getitem__(self, key, cache_getitem=Cache.__getitem__):
         token = super(TokenCache, self).__getitem__(key, cache_getitem=cache_getitem)
         if token.get('expires', 0) <= epoch_ms():
             return None
