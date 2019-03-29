@@ -4,7 +4,6 @@ from cachetools import (
     TTLCache
 )
 from datetime import datetime
-from typing import Any
 
 
 def epoch_ms():
