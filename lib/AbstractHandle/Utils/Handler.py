@@ -184,9 +184,9 @@ class Handler:
             owner = self.shock_util.get_owner(node_id)
 
             if owner != user_id:
-                return False
+                return 0
 
-        return True
+        return 1
 
     def are_readable(self, hids):
         """
@@ -205,9 +205,9 @@ class Handler:
             is_readable = self.shock_util.is_readable(node_id)
 
             if not is_readable:
-                return False
+                return 0
 
-        return True
+        return 1
 
     def add_read_acl(self, hids, username=None):
         """
@@ -227,4 +227,4 @@ class Handler:
             node_id = handle.get('id')
             self.shock_util.add_read_acl(node_id, username=username)
 
-        return True
+        return 1
