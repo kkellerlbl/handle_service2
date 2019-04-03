@@ -11,14 +11,11 @@ class MongoUtil:
     def _start_service(self):
         logging.info('starting mongod service')
 
-        logging.info('running sudo service mongodb restart')
-        pipe = subprocess.Popen("sudo service mongodb restart", shell=True, stdout=subprocess.PIPE,
+        logging.info('running sudo service mongodb start')
+        pipe = subprocess.Popen("sudo service mongodb start", shell=True, stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         stdout, stderr = pipe.communicate()
         logging.info(stdout)
-
-        if stderr:
-            raise ValueError('Cannot start mongodb')
 
         logging.info('running mongod --version')
         pipe = subprocess.Popen("mongod --version", shell=True, stdout=subprocess.PIPE,
