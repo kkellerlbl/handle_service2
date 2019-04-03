@@ -75,7 +75,7 @@ class MongoUtil:
                             ''.join(traceback.format_exception(None, e, e.__traceback__)))
             raise ValueError(error_msg)
 
-        logging.info('returned {} results'.format(len(list(result))))
+        logging.info('returned {} results'.format(result.count()))
 
         return result
 
