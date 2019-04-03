@@ -69,11 +69,13 @@ class MongoUtil:
             result = self.handle_collection.find({field_name: {'$in': elements}},
                                                  projection=projection, batch_size=batch_size)
         except Exception as e:
-            error_msg = 'Connot insert doc\n'
+            error_msg = 'Connot query doc\n'
             error_msg += 'ERROR -- {}:\n{}'.format(
                             e,
                             ''.join(traceback.format_exception(None, e, e.__traceback__)))
             raise ValueError(error_msg)
+
+        logging.info('returned {} results'.format(len(list(result))))
 
         return result
 
