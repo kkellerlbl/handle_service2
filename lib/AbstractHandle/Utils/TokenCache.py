@@ -7,7 +7,7 @@ from datetime import datetime
 
 
 def epoch_ms():
-    return int(datetime.utcnow().timestamp()*1000)
+    return int((datetime.utcnow() - datetime.utcfromtimestamp(0)).total_seconds() * 1000)
 
 
 class TokenCache(TTLCache):
