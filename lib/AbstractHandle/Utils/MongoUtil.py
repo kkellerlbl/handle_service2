@@ -76,6 +76,7 @@ class MongoUtil:
             raise ValueError(error_msg)
 
         logging.info('returned {} results'.format(result.count()))
+        #print(list(result))
 
         return result
 
