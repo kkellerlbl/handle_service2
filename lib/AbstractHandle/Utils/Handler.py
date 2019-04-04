@@ -140,7 +140,7 @@ class Handler:
 
         docs = self.mongo_util.find_in([hid], 'hid')
 
-        if docs.count():
+        if len(docs):
             # handle exists, update handle
             if handle.get('created_by') != user_id:
                 raise ValueError('Cannot update handle not created by owner')
