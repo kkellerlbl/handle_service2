@@ -76,8 +76,9 @@ class MongoUtil:
             raise ValueError(error_msg)
 
         logging.info('returned {} results'.format(result.count()))
+        #print(list(result))
 
-        return list(result)
+        return result
 
     def insert_one(self, doc):
         """
