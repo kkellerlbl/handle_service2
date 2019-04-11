@@ -25,6 +25,10 @@ class HandlerTest(unittest.TestCase):
         for nameval in config.items('AbstractHandle'):
             cls.cfg[nameval[0]] = nameval[1]
         cls.cfg['admin-token'] = cls.token
+        cls.cfg['mongo-host'] = 'localhost'
+        cls.cfg['mongo-port'] = 27017
+        cls.cfg['mongo-database'] = 'handle_db'
+        cls.cfg['mongo-collection'] = 'handle'
         # Getting username from Auth profile for token
         authServiceUrl = cls.cfg['auth-service-url']
         auth_client = _KBaseAuth(authServiceUrl)
@@ -81,7 +85,7 @@ class HandlerTest(unittest.TestCase):
 
     def test_init_ok(self):
         self.start_test()
-        class_attri = ['mongo_util']
+        class_attri = ['mongo_util', 'shock_util', 'token_cache', 'auth_url', 'admin_roles']
         handler = self.getHandler()
         self.assertTrue(set(class_attri) <= set(handler.__dict__.keys()))
 
@@ -233,10 +237,10 @@ class HandlerTest(unittest.TestCase):
         hid = handler.persist_handle(handle, self.user_id)
         hids.append(hid)
 
-        is_owner = handler.is_owner(hids, 'tgu2')
+        is_owner = handler.is_owner(hids, self.token, 'tgu2')
         self.assertTrue(is_owner)
 
-        is_owner = handler.is_owner(hids, 'tgu3')
+        is_owner = handler.is_owner(hids, self.token, 'tgu3')
         self.assertFalse(is_owner)
 
         handles_to_delete = handler.fetch_handles_by({'elements': hids, 'field_name': 'hid'})
@@ -263,7 +267,7 @@ class HandlerTest(unittest.TestCase):
         hid = handler.persist_handle(handle, self.user_id)
         hids.append(hid)
 
-        are_readable = handler.are_readable(hids)
+        are_readable = handler.are_readable(hids, self.token)
         self.assertTrue(are_readable)
 
         handles_to_delete = handler.fetch_handles_by({'elements': hids, 'field_name': 'hid'})
@@ -306,19 +310,19 @@ class HandlerTest(unittest.TestCase):
         self.assertCountEqual(users, [self.user_id])
 
         # grant public read access
-        handler.add_read_acl(hids)
+        handler.add_read_acl(hids, self.token)
         resp = _requests.get(end_point, headers=headers)
         data = resp.json()
         self.assertTrue(data.get('data').get('public').get('read'))
 
         # should work for already publicly accessable ndoes
-        handler.add_read_acl(hids)
+        handler.add_read_acl(hids, self.token)
         resp = _requests.get(end_point, headers=headers)
         data = resp.json()
         self.assertTrue(data.get('data').get('public').get('read'))
 
         # test grant access to user who already has read access
-        handler.add_read_acl(hids, username=self.user_id)
+        handler.add_read_acl(hids, self.token, username=self.user_id)
         resp = _requests.get(end_point, headers=headers)
         data = resp.json()
         new_users = [user.get('username') for user in data.get('data').get('read')]
@@ -326,7 +330,7 @@ class HandlerTest(unittest.TestCase):
 
         # grant access to tgu3
         new_user = 'tgu3'
-        handler.add_read_acl(hids, username=new_user)
+        handler.add_read_acl(hids, self.token, username=new_user)
         resp = _requests.get(end_point, headers=headers)
         data = resp.json()
         new_users = [user.get('username') for user in data.get('data').get('read')]
