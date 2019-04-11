@@ -40,7 +40,7 @@ class Handler:
 
         handle = {k: v for k, v in handle.items() if k in self.FIELD_NAMES}  # remove unnecessary fields
         if not handle.get('hid'):
-            handle['hid'] = str(uuid.uuid4())
+            handle['hid'] = 'KBH_' + str(uuid.uuid4())
 
         handle['_id'] = handle.get('hid')  # assign _id to hid
 
