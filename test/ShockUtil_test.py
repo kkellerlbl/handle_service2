@@ -15,7 +15,7 @@ class ShockUtilTest(unittest.TestCase):
     def setUpClass(cls):
         cls.token = os.environ.get('KB_AUTH_TOKEN', None)
         config_file = os.environ.get('KB_DEPLOYMENT_CONFIG', None)
-        cls.cfg = {'KB_AUTH_TOKEN': cls.token}
+        cls.cfg = {}
         config = ConfigParser()
         config.read(config_file)
         for nameval in config.items('AbstractHandle'):
