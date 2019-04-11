@@ -97,7 +97,6 @@ class Handler:
         self.token_cache = TokenCache(1000, self.CACHE_EXPIRE_TIME)
         self.auth_url = config.get('auth-url')
         self.admin_roles = [role.strip() for role in config.get('admin-roles').split(',')]
-        self.token = config.get('KB_AUTH_TOKEN')
 
         logging.basicConfig(format='%(created)s %(levelname)s: %(message)s',
                             level=logging.INFO)
@@ -168,7 +167,7 @@ class Handler:
 
         return deleted_count
 
-    def is_owner(self, hids, user_id):
+    def is_owner(self, hids, token, user_id):
         """
         check and see if token user is owner.username from shock node
         """
@@ -181,14 +180,14 @@ class Handler:
                 raise ValueError('Do not support node type other than Shock')
 
             node_id = handle.get('id')
-            owner = self.shock_util.get_owner(node_id)
+            owner = self.shock_util.get_owner(node_id, token)
 
             if owner != user_id:
                 return 0
 
         return 1
 
-    def are_readable(self, hids):
+    def are_readable(self, hids, token):
         """
         check if nodes associated with handles is reachable/readable
         """
@@ -202,19 +201,19 @@ class Handler:
 
             node_id = handle.get('id')
 
-            is_readable = self.shock_util.is_readable(node_id)
+            is_readable = self.shock_util.is_readable(node_id, token)
 
             if not is_readable:
                 return 0
 
         return 1
 
-    def add_read_acl(self, hids, username=None):
+    def add_read_acl(self, hids, token, username=None):
         """
         grand readable acl for username or global if username is empty
         """
 
-        if not self._is_admin_user(self.token):
+        if not self._is_admin_user(token):
             raise ValueError('User may not run add_read_acl/set_public_read method')
 
         handles = self.fetch_handles_by({'elements': hids, 'field_name': 'hid'})
@@ -225,6 +224,6 @@ class Handler:
                 raise ValueError('Do not support node type other than Shock')
 
             node_id = handle.get('id')
-            self.shock_util.add_read_acl(node_id, username=username)
+            self.shock_util.add_read_acl(node_id, token, username=username)
 
         return 1

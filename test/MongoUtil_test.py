@@ -20,6 +20,11 @@ class MongoUtilTest(unittest.TestCase):
         for nameval in config.items('AbstractHandle'):
             cls.cfg[nameval[0]] = nameval[1]
 
+        cls.cfg['mongo-host'] = 'localhost'
+        cls.cfg['mongo-port'] = 27017
+        cls.cfg['mongo-database'] = 'handle_db'
+        cls.cfg['mongo-collection'] = 'handle'
+
         cls.mongo_helper = MongoHelper()
         cls.my_client = cls.mongo_helper.create_test_db(db=cls.cfg['mongo-database'],
                                                         col=cls.cfg['mongo-collection'])
@@ -46,7 +51,7 @@ class MongoUtilTest(unittest.TestCase):
 
     def test_init_ok(self):
         self.start_test()
-        class_attri = ['mongo_host', 'mongo_port', 'mongo_database', 'mongo_collection']
+        class_attri = ['mongo_host', 'mongo_port', 'mongo_database', 'mongo_collection', 'handle_collection']
         mongo_util = self.getMongoUtil()
         self.assertTrue(set(class_attri) <= set(mongo_util.__dict__.keys()))
 
