@@ -28,7 +28,7 @@ provides a programmatic access to a remote file store
     GIT_COMMIT_HASH = "97517349590de76e4cc306bf3a93556fbea2684b"
 
     #BEGIN_CLASS_HEADER
-    MONGO_HOST = 'localhost'
+    MONGO_HOST = '127.0.0.1'
     MONGO_PORT = 27017
     MONGO_DB = 'handle_db'
     MONGO_COLLECTION = 'handle'
