@@ -28,8 +28,6 @@ provides a programmatic access to a remote file store
     GIT_COMMIT_HASH = "97517349590de76e4cc306bf3a93556fbea2684b"
 
     #BEGIN_CLASS_HEADER
-    MONGO_HOST = '127.0.0.1'
-    MONGO_PORT = 27017
     MONGO_DB = 'handle_db'
     MONGO_COLLECTION = 'handle'
     #END_CLASS_HEADER
@@ -39,8 +37,6 @@ provides a programmatic access to a remote file store
     def __init__(self, config):
         #BEGIN_CONSTRUCTOR
         self.config = config
-        self.config['mongo-host'] = self.MONGO_HOST
-        self.config['mongo-port'] = self.MONGO_PORT
         self.config['mongo-database'] = self.MONGO_DB
         self.config['mongo-collection'] = self.MONGO_COLLECTION
 

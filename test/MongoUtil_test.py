@@ -20,8 +20,6 @@ class MongoUtilTest(unittest.TestCase):
         for nameval in config.items('AbstractHandle'):
             cls.cfg[nameval[0]] = nameval[1]
 
-        cls.cfg['mongo-host'] = 'localhost'
-        cls.cfg['mongo-port'] = 27017
         cls.cfg['mongo-database'] = 'handle_db'
         cls.cfg['mongo-collection'] = 'handle'
 
