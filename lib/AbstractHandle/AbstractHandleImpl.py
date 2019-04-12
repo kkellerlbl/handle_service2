@@ -23,11 +23,13 @@ provides a programmatic access to a remote file store
     # state. A method could easily clobber the state set by another while
     # the latter method is running.
     ######################################### noqa
-    VERSION = "0.0.1"
+    VERSION = "1.0.0"
     GIT_URL = "git@github.com:Tianhao-Gu/handle_service2.git"
-    GIT_COMMIT_HASH = "e720dd429516449c685c2d38c0bd2c72fc653b24"
+    GIT_COMMIT_HASH = "97517349590de76e4cc306bf3a93556fbea2684b"
 
     #BEGIN_CLASS_HEADER
+    MONGO_DB = 'handle_db'
+    MONGO_COLLECTION = 'handle'
     #END_CLASS_HEADER
 
     # config contains contents of config file in a hash or None if it couldn't
@@ -35,7 +37,8 @@ provides a programmatic access to a remote file store
     def __init__(self, config):
         #BEGIN_CONSTRUCTOR
         self.config = config
-        self.config['KB_AUTH_TOKEN'] = os.environ['KB_AUTH_TOKEN']
+        self.config['mongo-database'] = self.MONGO_DB
+        self.config['mongo-collection'] = self.MONGO_COLLECTION
 
         logging.basicConfig(format='%(created)s %(levelname)s: %(message)s',
                             level=logging.INFO)
@@ -208,7 +211,7 @@ provides a programmatic access to a remote file store
         # ctx is the context object
         # return variables are: returnVal
         #BEGIN is_owner
-        returnVal = self.handler.is_owner(hids, ctx['user_id'])
+        returnVal = self.handler.is_owner(hids, ctx['token'], ctx['user_id'])
         #END is_owner
 
         # At some point might do deeper type checking...
@@ -269,7 +272,7 @@ provides a programmatic access to a remote file store
         # ctx is the context object
         # return variables are: returnVal
         #BEGIN are_readable
-        returnVal = self.handler.are_readable(hids)
+        returnVal = self.handler.are_readable(hids, ctx['token'])
         #END are_readable
 
         # At some point might do deeper type checking...
@@ -328,7 +331,7 @@ provides a programmatic access to a remote file store
         # ctx is the context object
         # return variables are: returnVal
         #BEGIN add_read_acl
-        returnVal = self.handler.add_read_acl(hids, username=username)
+        returnVal = self.handler.add_read_acl(hids, ctx['token'], username=username)
         #END add_read_acl
 
         # At some point might do deeper type checking...
@@ -357,7 +360,7 @@ provides a programmatic access to a remote file store
         # ctx is the context object
         # return variables are: returnVal
         #BEGIN set_public_read
-        returnVal = self.handler.add_read_acl(hids)
+        returnVal = self.handler.add_read_acl(hids, ctx['token'])
         #END set_public_read
 
         # At some point might do deeper type checking...

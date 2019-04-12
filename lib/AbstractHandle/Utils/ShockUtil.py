@@ -7,17 +7,17 @@ import requests as _requests
 
 class ShockUtil:
 
-    def _get_header(self):
-        return {'Authorization': 'OAuth {}'.format(self.token)}
+    def _get_header(self, token):
+        return {'Authorization': 'OAuth {}'.format(token)}
 
     def _get_admin_header(self):
         return {'Authorization': 'OAuth {}'.format(self.admin_token)}
 
-    def _grant_read_access(self, node_id, username=None):
+    def _grant_read_access(self, node_id, token, username=None):
         """
         grant readable acl for username or global if username is empty
         """
-        headers = self._get_header()
+        headers = self._get_header(token)
 
         if username:  # grand readable acl for user
             end_point = os.path.join(self.shock_url, 'node', node_id, 'acl/read?users={}'.format(username))
@@ -40,18 +40,17 @@ class ShockUtil:
 
     def __init__(self, config):
         self.shock_url = config.get('shock-url')
-        self.token = config.get('KB_AUTH_TOKEN')
         self.admin_token = config.get('admin-token')
 
         logging.basicConfig(format='%(created)s %(levelname)s: %(message)s',
                             level=logging.INFO)
 
-    def get_owner(self, node_id):
+    def get_owner(self, node_id, token):
         """
         parse owner.username information from shock acl of a node
         """
 
-        headers = self._get_header()
+        headers = self._get_header(token)
 
         end_point = os.path.join(self.shock_url, 'node', node_id, 'acl/?verbosity=full')
 
@@ -73,12 +72,12 @@ class ShockUtil:
             else:
                 return owner
 
-    def is_readable(self, node_id):
+    def is_readable(self, node_id, token):
         """
         check if a node is reachable/readable
         """
 
-        headers = self._get_header()
+        headers = self._get_header(token)
 
         end_point = os.path.join(self.shock_url, 'node', node_id)
 
@@ -89,7 +88,7 @@ class ShockUtil:
         else:
             return False
 
-    def add_read_acl(self, node_id, username=None):
+    def add_read_acl(self, node_id, token, username=None):
         """
         check current acl and then grant readable acl to user or public
         """
@@ -119,7 +118,7 @@ class ShockUtil:
 
                     if username not in read_users:
                         # grant user read access
-                        self._grant_read_access(node_id, username=username)
+                        self._grant_read_access(node_id, token, username=username)
             else:  # check readble acl and grand global readable acl
                 try:
                     public_read = data.get('data').get('public').get('read')
@@ -132,6 +131,6 @@ class ShockUtil:
                 else:
                     if not public_read:
                         # grant global read access
-                        self._grant_read_access(node_id)
+                        self._grant_read_access(node_id, token)
 
         return True

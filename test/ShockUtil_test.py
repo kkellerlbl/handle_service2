@@ -15,7 +15,7 @@ class ShockUtilTest(unittest.TestCase):
     def setUpClass(cls):
         cls.token = os.environ.get('KB_AUTH_TOKEN', None)
         config_file = os.environ.get('KB_DEPLOYMENT_CONFIG', None)
-        cls.cfg = {'KB_AUTH_TOKEN': cls.token}
+        cls.cfg = {}
         config = ConfigParser()
         config.read(config_file)
         for nameval in config.items('AbstractHandle'):
@@ -73,7 +73,7 @@ class ShockUtilTest(unittest.TestCase):
 
     def test_init_ok(self):
         self.start_test()
-        class_attri = ['token', 'shock_url']
+        class_attri = ['admin_token', 'shock_url']
         shock_util = self.getShockUtil()
         self.assertTrue(set(class_attri) <= set(shock_util.__dict__.keys()))
 
@@ -83,7 +83,7 @@ class ShockUtilTest(unittest.TestCase):
 
         node_id = 'fake_node_id'
         with self.assertRaises(ValueError) as context:
-            shock_util.get_owner(node_id)
+            shock_util.get_owner(node_id, self.token)
 
         self.assertIn('Request owner failed', str(context.exception.args))
 
@@ -92,7 +92,7 @@ class ShockUtilTest(unittest.TestCase):
         shock_util = self.getShockUtil()
         node_id = self.createTestNode()
 
-        owner = shock_util.get_owner(node_id)
+        owner = shock_util.get_owner(node_id, self.token)
 
         self.assertEqual(owner, self.user_id)
 
@@ -101,11 +101,11 @@ class ShockUtilTest(unittest.TestCase):
         shock_util = self.getShockUtil()
         node_id = self.createTestNode()
 
-        is_readable = shock_util.is_readable(node_id)
+        is_readable = shock_util.is_readable(node_id, self.token)
         self.assertTrue(is_readable)
 
         node_id = 'fake_node_id'
-        is_readable = shock_util.is_readable(node_id)
+        is_readable = shock_util.is_readable(node_id, self.token)
         self.assertFalse(is_readable)
 
     def test_add_read_acl_ok(self):
@@ -126,19 +126,19 @@ class ShockUtilTest(unittest.TestCase):
         self.assertCountEqual(users, [self.user_id])
 
         # grant public read access
-        shock_util.add_read_acl(node_id)
+        shock_util.add_read_acl(node_id, self.token)
         resp = _requests.get(end_point, headers=headers)
         data = resp.json()
         self.assertTrue(data.get('data').get('public').get('read'))
 
         # should work for already publicly accessable ndoes
-        shock_util.add_read_acl(node_id)
+        shock_util.add_read_acl(node_id, self.token)
         resp = _requests.get(end_point, headers=headers)
         data = resp.json()
         self.assertTrue(data.get('data').get('public').get('read'))
 
         # test grant access to user who already has read access
-        shock_util.add_read_acl(node_id, username=self.user_id)
+        shock_util.add_read_acl(node_id, self.token, username=self.user_id)
         resp = _requests.get(end_point, headers=headers)
         data = resp.json()
         new_users = [user.get('username') for user in data.get('data').get('read')]
@@ -146,7 +146,7 @@ class ShockUtilTest(unittest.TestCase):
 
         # grant access to tgu3 (Tian made this test so ^^)
         new_user = 'tgu3'
-        shock_util.add_read_acl(node_id, username=new_user)
+        shock_util.add_read_acl(node_id, self.token, username=new_user)
         resp = _requests.get(end_point, headers=headers)
         data = resp.json()
         new_users = [user.get('username') for user in data.get('data').get('read')]
