@@ -401,7 +401,7 @@ class Application(object):
         else:
             request_body = environ['wsgi.input'].read(body_size)
             try:
-                req = json.loads(request_body)
+                req = json.loads(request_body.decode('utf-8'))
             except ValueError as ve:
                 err = {'error': {'code': -32700,
                                  'name': "Parse error",
