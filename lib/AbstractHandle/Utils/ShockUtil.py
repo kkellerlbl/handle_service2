@@ -99,7 +99,8 @@ class ShockUtil:
         resp = _requests.get(end_point, headers=headers)
 
         if resp.status_code != 200:
-            raise ValueError('Unable to set acl(s) on handles {}'.format(node_id))
+            raise ValueError('Grant readable access for node failed.\nError Code: {}\n{}\n'
+                             .format(resp.status_code, resp.text))
         else:
             data = resp.json()
 

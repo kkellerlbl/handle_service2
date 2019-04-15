@@ -224,6 +224,9 @@ class Handler:
                 raise ValueError('Do not support node type other than Shock')
 
             node_id = handle.get('id')
-            self.shock_util.add_read_acl(node_id, token, username=username)
+            try:
+                self.shock_util.add_read_acl(node_id, token, username=username)
+            except Exception:
+                raise ValueError("Unable to set acl(s) on handles {}".format(handle.get('hid')))
 
         return 1
