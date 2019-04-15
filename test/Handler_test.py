@@ -25,7 +25,6 @@ class HandlerTest(unittest.TestCase):
         for nameval in config.items('AbstractHandle'):
             cls.cfg[nameval[0]] = nameval[1]
         cls.cfg['admin-token'] = cls.token
-        cls.cfg['mongo-database'] = 'handle_db'
         cls.cfg['mongo-collection'] = 'handle'
         # Getting username from Auth profile for token
         authServiceUrl = cls.cfg['auth-service-url']
