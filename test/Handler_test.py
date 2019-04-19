@@ -217,27 +217,21 @@ class HandlerTest(unittest.TestCase):
     def test_is_owner_ok(self):
         self.start_test()
         handler = self.getHandler()
+        node_id = self.createTestNode()
 
         hids = list()
 
-        handle = {'id': '4cb26117-9793-4354-98a6-926c02a7bd0e',  # use one of `tgu2` node
+        handle = {'id': node_id,
                   'file_name': 'file_name',
                   'type': 'shock',
-                  'url': 'https://ci.kbase.us/services/shock-api'}
+                  'url': self.shock_url}
         hid = handler.persist_handle(handle, self.user_id)
         hids.append(hid)
 
-        handle = {'id': 'cadf4bd8-7d95-4edd-994c-b50e29c25e50',  # use one of `tgu2` node
-                  'file_name': 'file_name',
-                  'type': 'shock',
-                  'url': 'https://ci.kbase.us/services/shock-api'}
-        hid = handler.persist_handle(handle, self.user_id)
-        hids.append(hid)
-
-        is_owner = handler.is_owner(hids, self.token, 'tgu2')
+        is_owner = handler.is_owner(hids, self.token, self.user_id)
         self.assertTrue(is_owner)
 
-        is_owner = handler.is_owner(hids, self.token, 'tgu3')
+        is_owner = handler.is_owner(hids, self.token, 'fake_user_100')
         self.assertFalse(is_owner)
 
         handles_to_delete = handler.fetch_handles_by({'elements': hids, 'field_name': 'hid'})
@@ -247,20 +241,22 @@ class HandlerTest(unittest.TestCase):
     def test_are_readable_ok(self):
         self.start_test()
         handler = self.getHandler()
+        node_id_1 = self.createTestNode()
+        node_id_2 = self.createTestNode()
 
         hids = list()
 
-        handle = {'id': '4cb26117-9793-4354-98a6-926c02a7bd0e',  # use one of `tgu2` node
+        handle = {'id': node_id_1,
                   'file_name': 'file_name',
                   'type': 'shock',
-                  'url': 'https://ci.kbase.us/services/shock-api'}
+                  'url': self.shock_url}
         hid = handler.persist_handle(handle, self.user_id)
         hids.append(hid)
 
-        handle = {'id': 'cadf4bd8-7d95-4edd-994c-b50e29c25e50',  # use one of `tgu2` node
+        handle = {'id': node_id_2,
                   'file_name': 'file_name',
                   'type': 'shock',
-                  'url': 'https://ci.kbase.us/services/shock-api'}
+                  'url': self.shock_url}
         hid = handler.persist_handle(handle, self.user_id)
         hids.append(hid)
 
@@ -290,7 +286,7 @@ class HandlerTest(unittest.TestCase):
         handle = {'id': node_id,
                   'file_name': 'file_name',
                   'type': 'shock',
-                  'url': 'https://ci.kbase.us/services/shock-api'}
+                  'url': self.shock_url}
         hid = handler.persist_handle(handle, self.user_id)
         hids.append(hid)
 
