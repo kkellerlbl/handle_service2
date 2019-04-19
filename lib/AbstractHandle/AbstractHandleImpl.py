@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 #BEGIN_HEADER
 import logging
-import os
 
 from AbstractHandle.Utils.Handler import Handler
 #END_HEADER
