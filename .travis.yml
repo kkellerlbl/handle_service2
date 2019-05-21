@@ -27,6 +27,7 @@ install:
 
 script:
   - kb-sdk validate
-  - make test
+  - kb-sdk make
+  - kb-sdk make test
 
 after_script:
